@@ -14,6 +14,7 @@ folder = "data/"
 def main():
     printLinkAnalysis()
     printConvergenceAnalysis()
+    printConvMsgAnalysis()
 
 
 def printLinkAnalysis():
@@ -33,6 +34,24 @@ def printConvergenceAnalysis():
     filename = folder+'plot_convAnalysis'
     partPlot3("ConvAnalysis", "convAnalysis", filename, "blue")
 
+
+def printConvMsgAnalysis():
+    fig = plt.figure()
+    filename = folder+'plot_convMsgAnalysis'
+    scatterPlot3("ConvMsgAnalysis", "convMsgAnalysis", filename)
+    plt.xscale(xscale)
+    plt.xlabel("node ID")
+    plt.ylabel("# of messages to converge")
+    plt.savefig(filename+'.eps', format='eps')
+    plt.clf()
+
+def scatterPlot3(type, file, filename):
+    x = loadDatafromRow(file, xcol)
+    y = loadDatafromRow(file, ycol)
+    z = loadDatafromRow(file, zcol)
+    col = np.where(z<8, 'r', 'b')
+    plt.scatter(x, y, c=col, alpha=1.0)
+    np.savez(filename+"_"+type, x=x, y=y)
 
 def partPlot2(type, file, filename, color):
     color = 'tab:blue'

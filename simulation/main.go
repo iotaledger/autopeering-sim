@@ -21,6 +21,7 @@ var (
 	protocolMap    = make(map[peer.ID]*selection.Protocol)
 	idMap          = make(map[peer.ID]uint16)
 	status         = NewStatusMap() // key: timestamp, value: Status
+	convMsg        []int
 	neighborhoods  = make(map[peer.ID][]*peer.Peer)
 	Links          = []Link{}
 	termTickerChan = make(chan bool)
@@ -59,6 +60,8 @@ func RunSim() {
 	selection.Events.OutgoingPeering.Attach(events.NewClosure(func(e *selection.PeeringEvent) { outgoingChan <- e }))
 	selection.Events.Dropped.Attach(events.NewClosure(func(e *selection.DroppedEvent) { dropChan <- e }))
 
+	convMsg = make([]int, N)
+	initialSalt := 0.
 	//lambda := (float64(N) / SaltLifetime.Seconds()) * 10
 	initialSalt := 0.
 
@@ -145,6 +148,13 @@ func RunSim() {
 		log.Fatalln("error writing csv:", err)
 	}
 
+	// calculate avg messages to converge
+	convMsgAnalysis, convAvgMsg := convMsgToString(convMsg)
+	err = writeCSV(convMsgAnalysis, "convMsgAnalysis", []string{"ID", "MSG", "NEIGHBORS"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+	fmt.Println("avg message to converge ", convAvgMsg)
 	log.Println("Simulation Done")
 }
 
@@ -247,4 +257,9 @@ func updateConvergence(time time.Duration) {
 	c := (float64(counter) / float64(N)) * 100
 	avg := float64(avgNeighbors) / float64(N)
 	RecordConv.Append(Convergence{time, c, avg})
+}
+
+func updateConvergenceMsg(from, to uint16) {
+	convMsg[from] = status.MsgLen(from)
+	convMsg[to] = status.MsgLen(to)
 }
