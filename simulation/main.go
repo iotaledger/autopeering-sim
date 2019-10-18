@@ -113,6 +113,11 @@ func RunSim() {
 		log.Fatalln("error writing csv:", err)
 	}
 
+	distanceAnalysis := distanceToString()
+	err = writeCSV(distanceAnalysis, "distanceAnalysis", []string{"X", "Y"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
 	log.Println("Simulation Done")
 }
 

@@ -106,3 +106,13 @@ func (nh *Neighborhood) GetPeerFromID(id peer.ID) *peer.Peer {
 	}
 	return nil
 }
+
+func (nh *Neighborhood) GetPeersDistance() []uint32 {
+	nh.mutex.RLock()
+	defer nh.mutex.RUnlock()
+	list := make([]uint32, len(nh.Neighbors))
+	for i, peer := range nh.Neighbors {
+		list[i] = peer.Distance
+	}
+	return list
+}

@@ -309,6 +309,15 @@ func (m *Manager) GetNeighbors() []*peer.Peer {
 	return neighbors
 }
 
+func (m *Manager) GetNeighborsDistance() []uint32 {
+	var distance []uint32
+
+	distance = append(distance, m.inbound.GetPeersDistance()...)
+	distance = append(distance, m.outbound.GetPeersDistance()...)
+
+	return distance
+}
+
 func (m *Manager) getDuplicates() []peer.ID {
 	var d []peer.ID
 

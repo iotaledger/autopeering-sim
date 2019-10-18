@@ -14,6 +14,7 @@ folder = "data/"
 def main():
     printLinkAnalysis()
     printConvergenceAnalysis()
+    printDistanceAnalysis()
 
 
 def printLinkAnalysis():
@@ -33,6 +34,14 @@ def printConvergenceAnalysis():
     filename = folder+'plot_convAnalysis'
     partPlot3("ConvAnalysis", "convAnalysis", filename, "blue")
 
+def printDistanceAnalysis():
+    fig = plt.figure()
+    filename = folder+'plot_distanceAnalysis'
+    partPlot2("DistanceAnalysis", "distanceAnalysis", filename, "blue")
+    plt.xlabel("Distance")
+    plt.ylabel("Probability")
+    plt.savefig(filename+'.eps', format='eps')
+    plt.clf()
 
 def partPlot2(type, file, filename, color):
     color = 'tab:blue'
