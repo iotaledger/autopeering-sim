@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
 xcol = 0
 xlabel = "Time [seconds]"
@@ -12,15 +13,26 @@ folder = "data/"
 
 
 def main():
-    printLinkAnalysis()
+    # argument parser settings
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--N', type=int, required=True, help='minimum number of nodes')
+    parser.add_argument('--maxN', type=int, required=True,help='maximum number of nodes')
+    parser.add_argument('--t', type=int, required=True, help='interval of simulation')
+    args = parser.parse_args()
+    interval = (args.maxN - args.N) // args.t + 1 
+    # Plot 
+    printLinkAnalysis(args, interval)
     printConvergenceAnalysis()
-    printDistanceAnalysis()
+    printDistanceAnalysis(args, interval)
 
 
-def printLinkAnalysis():
+def printLinkAnalysis(args, interval):
     fig = plt.figure()
     filename = folder+'plot_linkAnalysis'
-    partPlot2("LinkAnalysis", "linkAnalysis", filename, "blue")
+    for i in range(interval):
+        csv = "linkAnalysis_" + str(i)
+        label = "N=" + str(args.N + i * args.t) 
+        partPlot2("LinkAnalysis", csv, filename, label)
     plt.xscale(xscale)
     #plt.xlim(xlim)
     plt.xlabel(xlabel)
@@ -34,32 +46,44 @@ def printConvergenceAnalysis():
     filename = folder+'plot_convAnalysis'
     partPlot3("ConvAnalysis", "convAnalysis", filename, "blue")
 
-def printDistanceAnalysis():
+def printDistanceAnalysis(args, interval):
     fig = plt.figure()
     filename = folder+'plot_distanceAnalysis'
-    partPlot2("DistanceAnalysis", "distanceAnalysis", filename, "blue")
+    for i in range(interval):
+        csv = "distanceAnalysis_" + str(i)
+        label = "N=" + str(args.N + i * args.t) 
+        logPlot2("DistanceAnalysis", csv, filename, label)
+        #cdfPlot2("DistanceAnalysis", csv, filename, label)
     plt.xlabel("Distance")
     plt.ylabel("Probability")
+    plt.legend(loc='best')
     plt.savefig(filename+'.eps', format='eps')
     plt.clf()
 
-def cdfPlot2(type, file, filename, color):
-    color = 'tab:blue'
-    color1 = 'tab:red'
+def cdfPlot2(type, file, filename, label):
     x = loadDatafromRow(file, xcol)
     y = loadDatafromRow(file, ycol)
     x, y = sort2vecs(x, y)
     CY = np.cumsum(y)
-    plt.plot(x, y, color=color, linewidth=1)
-    plt.plot(x, CY, color=color1, linewidth=1)
+    plt.plot(x, CY, linewidth=1, label=label)
     np.savez(filename+"_"+type, x=x, y=y)
 
-def partPlot2(type, file, filename, color):
-    color = 'tab:blue'
+def logPlot2(type, file, filename, label):
     x = loadDatafromRow(file, xcol)
     y = loadDatafromRow(file, ycol)
     x, y = sort2vecs(x, y)
-    plt.plot(x, y, color=color, linewidth=1)
+    CY = np.cumsum(y)
+    CY = 1.0-CY
+    plt.yscale('log')
+    # ignore the last element log(0)
+    plt.plot(x[:-1], CY[:-1], linewidth=1, label=label)
+    np.savez(filename+"_"+type, x=x, y=y)
+
+def partPlot2(type, file, filename, label):
+    x = loadDatafromRow(file, xcol)
+    y = loadDatafromRow(file, ycol)
+    x, y = sort2vecs(x, y)
+    plt.plot(x, y, linewidth=1, label=label)
     np.savez(filename+"_"+type, x=x, y=y)
 
 def partPlot3(type, file, filename, color):
@@ -89,7 +113,6 @@ def partPlot3(type, file, filename, color):
     np.savez(filename+"_"+type, x=x, y=y)
     fig.savefig(filename+'.eps', format='eps')
     fig.clf()
-
 
 def sort2vecs(x, y):
     i = np.argsort(x)

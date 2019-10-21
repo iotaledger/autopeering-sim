@@ -8,6 +8,8 @@ type Param struct {
 	SimDuration int64
 	T           int64
 	dropAll     bool
+    N_interval  int64
+    N_max       int64
 }
 
 func setParam(p *Param) {
@@ -16,6 +18,7 @@ func setParam(p *Param) {
 	}
 	if p.N != 0 {
 		N = int(p.N)
+        N_max = N
 	}
 	if p.T != 0 {
 		SaltLifetime = time.Duration(p.T) * time.Second
@@ -23,6 +26,10 @@ func setParam(p *Param) {
 	if p.SimDuration != 0 {
 		SimDuration = int(p.SimDuration)
 	}
+    if p.N_interval != 0 && p.N_max != 0 {
+        N_interval = int(p.N_interval)
+        N_max = int(p.N_max)
+    }
 	vEnabled = p.vEnabled
 	DropAllFlag = p.dropAll
 }

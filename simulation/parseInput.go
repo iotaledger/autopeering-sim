@@ -72,6 +72,16 @@ func (p *Param) selectParam(paramtype, value string) error {
 		if err != nil {
 			panic("Unable to parse dropAll")
 		}
+	case "N_interval":
+		p.N_interval, err = strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			panic("Unable to parse N_interval")
+		}
+	case "N_max":
+		p.N_max, err = strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			panic("Unable to parse N_max")
+		}
 	}
 	return err
 }

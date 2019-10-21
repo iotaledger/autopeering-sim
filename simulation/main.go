@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+    "strconv"
 
 	"github.com/wollac/autopeering/peer"
 	"github.com/wollac/autopeering/selection"
@@ -31,9 +32,12 @@ var (
 	SimDuration  = 300
 	SaltLifetime = 300 * time.Second
 	DropAllFlag  = false
+    N_interval   = 1
+    N_max        = 100
 )
 
-func RunSim() {
+func RunSim(loop int) {
+    fileIndex := strconv.Itoa(loop)
 	allPeers = make([]*peer.Peer, N)
 	initialSalt := 0.
 	//lambda := (float64(N) / SaltLifetime.Seconds()) * 10
@@ -94,7 +98,7 @@ func RunSim() {
 
 	// Start finalize simulation result
 	linkAnalysis := linksToString(LinkSurvival(Links))
-	err := writeCSV(linkAnalysis, "linkAnalysis", []string{"X", "Y"})
+	err := writeCSV(linkAnalysis, "linkAnalysis_"+fileIndex, []string{"X", "Y"})
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
 	}
@@ -108,13 +112,13 @@ func RunSim() {
 	//log.Println(RecordConv)
 
 	msgAnalysis := messagesToString(status)
-	err = writeCSV(msgAnalysis, "msgAnalysis", []string{"ID", "OUT", "ACC", "REJ", "IN", "DROP"})
+	err = writeCSV(msgAnalysis, "msgAnalysis_"+fileIndex, []string{"ID", "OUT", "ACC", "REJ", "IN", "DROP"})
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
 	}
 
 	distanceAnalysis := distanceToString()
-	err = writeCSV(distanceAnalysis, "distanceAnalysis", []string{"X", "Y"})
+	err = writeCSV(distanceAnalysis, "distanceAnalysis_"+fileIndex, []string{"X", "Y"})
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
 	}
@@ -132,7 +136,13 @@ func main() {
 		<-s.Start
 	}
 	fmt.Println("start sim")
-	RunSim()
+    counter := 0
+        fmt.Println(N, N_max, N_interval)
+    for ;N<=N_max; N+=N_interval {
+        fmt.Println(N, N_max, N_interval)
+	    RunSim(counter)
+        counter++
+    }
 }
 
 func runLinkAnalysis() {
