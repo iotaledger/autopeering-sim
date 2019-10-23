@@ -1,7 +1,5 @@
-N=100
+N=1000
 T=100
 VisualEnabled=false
 SimDuration=100
 dropAll=false
-N_interval=100
-N_max=1000
