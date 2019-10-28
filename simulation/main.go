@@ -150,7 +150,7 @@ func RunSim() {
 
 	// calculate avg messages to converge
 	convMsgAnalysis, convAvgMsg := convMsgToString(convMsg)
-	err = writeCSV(convMsgAnalysis, "convMsgAnalysis", []string{"ID", "MSG", "NEIGHBORS"})
+	err = writeCSV(convMsgAnalysis, "convMsgAnalysis", []string{"MSG"})
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
 	}

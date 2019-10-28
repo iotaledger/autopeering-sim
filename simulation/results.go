@@ -90,15 +90,13 @@ func messagesToString(status *StatusMap) (output [][]string) {
 }
 
 func convMsgToString(cm []int) (output [][]string, avg float64) {
-	for _, peer := range allPeers {
-		i := idMap[peer.ID()]
+	total := 0
+	for _, msg := range cm {
 		record := []string{
-			fmt.Sprintf("%v", i),
-			fmt.Sprintf("%v", cm[i]),
-			fmt.Sprintf("%v", len(neighborhoods[peer.ID()])),
+			fmt.Sprintf("%v", msg),
 		}
-		avg += float64(cm[i])
 		output = append(output, record)
+		total += msg
 	}
-	return output, avg / float64(N)
+	return output, float64(total) / float64(N)
 }

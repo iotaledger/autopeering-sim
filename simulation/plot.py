@@ -34,24 +34,22 @@ def printConvergenceAnalysis():
     filename = folder+'plot_convAnalysis'
     partPlot3("ConvAnalysis", "convAnalysis", filename, "blue")
 
-
 def printConvMsgAnalysis():
     fig = plt.figure()
     filename = folder+'plot_convMsgAnalysis'
-    scatterPlot3("ConvMsgAnalysis", "convMsgAnalysis", filename)
+    histoPlot1("ConvMsgAnalysis", "convMsgAnalysis", filename, "blue")
     plt.xscale(xscale)
-    plt.xlabel("node ID")
-    plt.ylabel("# of messages to converge")
+    plt.xlabel("# of messages")
+    plt.ylabel("# of nodes")
     plt.savefig(filename+'.eps', format='eps')
     plt.clf()
 
-def scatterPlot3(type, file, filename):
+def histoPlot1(type, file, filename, color):
+    color = 'tab:blue'
+    bandwidth = 10
     x = loadDatafromRow(file, xcol)
-    y = loadDatafromRow(file, ycol)
-    z = loadDatafromRow(file, zcol)
-    col = np.where(z<8, 'r', 'b')
-    plt.scatter(x, y, c=col, alpha=1.0)
-    np.savez(filename+"_"+type, x=x, y=y)
+    plt.hist(x, bins=range(int(np.amin(x)), int(np.amax(x)), bandwidth))
+    np.savez(filename+"_"+type, x=x)
 
 def partPlot2(type, file, filename, color):
     color = 'tab:blue'

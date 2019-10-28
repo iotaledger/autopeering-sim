@@ -23,8 +23,10 @@ func newPeer(name string, saltLifetime time.Duration) simPeer {
 	var err error
 	if name == "1" {
 		l, err = zap.NewDevelopment()
+		//l, err = zap.NewProduction()
 	} else {
 		l, err = zap.NewDevelopment() //zap.NewProduction()
+		//l, err = zap.NewProduction()
 	}
 	if err != nil {
 		log.Fatalf("cannot initialize logger: %v", err)
