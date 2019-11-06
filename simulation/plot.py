@@ -49,6 +49,8 @@ def histoPlot1(type, file, filename, color):
     bandwidth = 10
     x = loadDatafromRow(file, xcol)
     plt.hist(x, bins=range(int(np.amin(x)), int(np.amax(x)), bandwidth))
+    axes = plt.gca()
+    axes.set_xlim([50, 350])
     np.savez(filename+"_"+type, x=x)
 
 def partPlot2(type, file, filename, color):
