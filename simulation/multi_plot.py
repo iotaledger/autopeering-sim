@@ -21,8 +21,8 @@ def main():
     args = parser.parse_args()
     interval = (args.maxN - args.N) // args.t + 1 
     # Plot 
-    printLinkAnalysis(args, interval)
-    printConvergenceAnalysis()
+    #printLinkAnalysis(args, interval)
+    #printConvergenceAnalysis()
     printDistanceAnalysis(args, interval)
 
 
@@ -32,7 +32,7 @@ def printLinkAnalysis(args, interval):
     for i in range(interval):
         csv = "linkAnalysis_" + str(i)
         label = "N=" + str(args.N + i * args.t) 
-        partPlot2("LinkAnalysis", csv, filename, label)
+        cdfPlot2("LinkAnalysis", csv, filename, label)
     plt.xscale(xscale)
     #plt.xlim(xlim)
     plt.xlabel(xlabel)
@@ -49,15 +49,16 @@ def printConvergenceAnalysis():
 def printDistanceAnalysis(args, interval):
     fig = plt.figure()
     filename = folder+'plot_distanceAnalysis'
-    for i in range(interval):
-        ary = [33, 100, 330, 1000]
+    ary = [33, 100, 330, 1000]
+    for i in range(len(ary)):
         csv = "distanceAnalysis_" + str(i)
-        label = "N=" + str(ary[i]) 
         #label = "N=" + str(args.N + i * args.t) 
+        label = "N=" + str(ary[i]) 
         logPlot2("DistanceAnalysis", csv, filename, label)
         #cdfPlot2("DistanceAnalysis", csv, filename, label)
     plt.xlabel("Distance")
     plt.ylabel("Probability log(1 - CDF)")
+    #plt.ylabel("Probability (CDF)")
     plt.legend(loc='best')
     plt.savefig(filename+'.eps', format='eps')
     plt.clf()
@@ -75,12 +76,12 @@ def logPlot2(type, file, filename, label):
     y = loadDatafromRow(file, ycol)
     x, y = sort2vecs(x, y)
     CY = np.cumsum(y)
-    CY = CY[CY <= 0.1]
-    x = x[:len(CY)]
+    #CY = CY[CY <= 0.3]
+    #x = x[:len(CY)]
     CY = 1.0-CY
     plt.yscale('log')
     # ignore the last element log(0)
-    plt.plot(x, CY, linewidth=1, label=label)
+    plt.plot(x[:-1], CY[:-1], linewidth=1, label=label)
     np.savez(filename+"_"+type, x=x, y=y)
 
 def partPlot2(type, file, filename, label):

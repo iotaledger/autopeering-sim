@@ -57,8 +57,8 @@ func RunSim(loop int) {
 			visualizer.AddNode(peer.local.ID().String())
 		}
 
-		// initialSalt = initialSalt + (1 / lambda)				 // constant rate
-		// initialSalt = initialSalt + rand.ExpFloat64()/lambda  // poisson process
+		//initialSalt = initialSalt + (1 / lambda)				 // constant rate
+		//initialSalt = initialSalt + rand.ExpFloat64()/lambda  // poisson process
 		initialSalt = rand.Float64() * SaltLifetime.Seconds() // random
 	}
 

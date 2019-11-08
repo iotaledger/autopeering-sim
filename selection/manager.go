@@ -312,7 +312,7 @@ func (m *Manager) GetNeighbors() []*peer.Peer {
 func (m *Manager) GetNeighborsDistance() []uint32 {
 	var distance []uint32
 
-	distance = append(distance, m.inbound.GetPeersDistance()...)
+	//distance = append(distance, m.inbound.GetPeersDistance()...)
 	distance = append(distance, m.outbound.GetPeersDistance()...)
 
 	return distance

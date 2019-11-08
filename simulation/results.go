@@ -91,7 +91,6 @@ func messagesToString(status *StatusMap) (output [][]string) {
 }
 
 func distanceToString() (output [][]string) {
-    /*
 	distList := make(map[float64]int)
 	var totalDist, numDist uint64
 	for _, peer := range allPeers {
@@ -113,7 +112,7 @@ func distanceToString() (output [][]string) {
 		output = append(output, record)
 	}
 	return output
-    */
+    /*
 	var totalDist, numDist uint64
 	for _, peer := range allPeers {
         dist := mgrMap[peer.ID()].GetNeighborsDistance()
@@ -129,4 +128,5 @@ func distanceToString() (output [][]string) {
 	}
     fmt.Println("avgDistance: ", float64(totalDist) / float64(numDist))
 	return output
+    */
 }

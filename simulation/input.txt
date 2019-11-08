@@ -1,4 +1,4 @@
-N=1000
+N=100
 T=100
 VisualEnabled=false
 SimDuration=100
