@@ -15,6 +15,7 @@ def main():
     printLinkAnalysis()
     printConvergenceAnalysis()
     printConvMsgAnalysis()
+    printMsgPerTAnalysis()
 
 
 def printLinkAnalysis():
@@ -44,13 +45,35 @@ def printConvMsgAnalysis():
     plt.savefig(filename+'.eps', format='eps')
     plt.clf()
 
+def printMsgPerTAnalysis():
+    fig = plt.figure()
+    filename = folder+'plot_msgPerTAnalysis'
+    histoPlotMulti("msgPerTAnalysis", "msgPerTAnalysis", filename, "blue")
+    plt.xscale(xscale)
+    plt.xlabel("# of messages per T (dropAll=true)")
+    plt.ylabel("# of nodes")
+    plt.savefig(filename+'.eps', format='eps')
+    plt.clf()
+
+def histoPlotMulti(type, file, filename, color):
+    color = 'tab:blue'
+    bandwidth = 1 
+    x = loadDatafromRow(file, 2)
+    for i in range(3, 10):
+        t = loadDatafromRow(file, i)
+        x = np.append(x, t)
+    plt.hist(x, bins=range(int(np.amin(x)), int(np.amax(x)), bandwidth))
+    axes = plt.gca()
+    axes.set_xlim([0, 100])
+    np.savez(filename+"_"+type, x=x)
+
 def histoPlot1(type, file, filename, color):
     color = 'tab:blue'
-    bandwidth = 10
+    bandwidth = 3 
     x = loadDatafromRow(file, xcol)
     plt.hist(x, bins=range(int(np.amin(x)), int(np.amax(x)), bandwidth))
     axes = plt.gca()
-    axes.set_xlim([50, 350])
+    axes.set_xlim([0, 300])
     np.savez(filename+"_"+type, x=x)
 
 def partPlot2(type, file, filename, color):
@@ -113,7 +136,6 @@ def loadDatafromRow(datatype, row):
         print(filestr)
         print("File not found.")
         return []
-
 
 # needs to be at the very end of the file
 if __name__ == '__main__':

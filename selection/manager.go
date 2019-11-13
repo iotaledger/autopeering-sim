@@ -32,6 +32,8 @@ var (
 	dropNeighborsOnUpdate bool // whether all neighbors are dropped on distance update
 )
 
+var ExpiredSaltChan = make(chan peer.ID, 100)
+
 // A network represents the communication layer for the manager.
 type network interface {
 	local() *peer.Local
@@ -150,6 +152,7 @@ Loop:
 			if updateOutboundDone == nil {
 				// check salt and update if necessary (this will drop the whole neighborhood)
 				if m.net.local().GetPublicSalt().Expired() {
+                    ExpiredSaltChan <- m.net.local().ID()
 					m.updateSalt()
 				}
 

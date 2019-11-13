@@ -83,10 +83,22 @@ func (c *ConvergenceList) GetAvgNeighbors() float64 {
 	return 0
 }
 
+func (c *ConvergenceList) ClearConvergence() {
+	c.Lock()
+	defer c.Unlock()
+	c.convergence = []Convergence{}
+}
+
 func NewStatusMap() *StatusMap {
 	return &StatusMap{
 		status: make(map[uint16][]Status),
 	}
+}
+
+func (s *StatusMap) ClearStatusMap(id uint16) {
+	s.Lock()
+	defer s.Unlock()
+	delete(s.status, id)
 }
 
 func (s *StatusMap) Append(from, to uint16, op byte) {

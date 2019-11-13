@@ -100,3 +100,16 @@ func convMsgToString(cm []int) (output [][]string, avg float64) {
 	}
 	return output, float64(total) / float64(N)
 }
+
+func msgPerTToString() (output [][]string, avg float64) {
+	total := 0
+	for i := range allPeers {
+		record := []string{}
+		for k := 0; k < len(msgPerTList[uint16(i)]); k++ {
+			record = append(record, fmt.Sprintf("%v", msgPerTList[uint16(i)][k]))
+			total += msgPerTList[uint16(i)][k]
+		}
+		output = append(output, record)
+	}
+	return output, float64(total) / float64(N*len(msgPerTList[0]))
+}

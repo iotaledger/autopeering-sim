@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/rand"
+	//"math/rand"
 	"sync"
 	"time"
 
@@ -29,7 +29,9 @@ var (
 	outgoingChan   = make(chan *selection.PeeringEvent, 10)
 	dropChan       = make(chan *selection.DroppedEvent, 10)
 	closing        = make(chan struct{})
+	saltTermChan   = make(chan bool)
 	RecordConv     = NewConvergenceList()
+	msgPerTList    = make(map[uint16][]int)
 	StartTime      time.Time
 	wg             sync.WaitGroup
 
@@ -63,7 +65,6 @@ func RunSim() {
 	convMsg = make([]int, N)
 	initialSalt := 0.
 	//lambda := (float64(N) / SaltLifetime.Seconds()) * 10
-	initialSalt := 0.
 
 	log.Println("Creating peers...")
 	for i := range allPeers {
@@ -94,11 +95,12 @@ func RunSim() {
 
 		// initialSalt = initialSalt + (1 / lambda)				 // constant rate
 		// initialSalt = initialSalt + rand.ExpFloat64()/lambda  // poisson process
-		initialSalt = rand.Float64() * SaltLifetime.Seconds() // random
+		//initialSalt = rand.Float64() * SaltLifetime.Seconds() // random
 	}
 
 	fmt.Println("start link analysis")
 	runLinkAnalysis()
+	runMsgAnalysis()
 
 	if vEnabled {
 		statVisualizer()
@@ -110,7 +112,16 @@ func RunSim() {
 		protocolMap[peer.ID()].Start(srv)
 	}
 
-	time.Sleep(time.Duration(SimDuration) * time.Second)
+	///* Get stable phase info
+	time.Sleep(time.Duration(30) * time.Second)
+	for i := range allPeers {
+		status.ClearStatusMap(uint16(i))
+		RecordConv.ClearConvergence()
+	}
+
+	time.Sleep(time.Duration(SimDuration-30) * time.Second)
+	//*/
+	//time.Sleep(time.Duration(SimDuration) * time.Second)
 	// Stop updating visualizer
 	if vEnabled {
 		termTickerChan <- true
@@ -123,6 +134,7 @@ func RunSim() {
 	}
 	log.Println("Closing Done")
 	close(closing)
+	saltTermChan <- true
 
 	// Wait until analysis goroutine stops
 	wg.Wait()
@@ -155,6 +167,14 @@ func RunSim() {
 		log.Fatalln("error writing csv:", err)
 	}
 	fmt.Println("avg message to converge ", convAvgMsg)
+
+	// calculate avg messages per T
+	msgPerTAnalysis, msgPerTAvg := msgPerTToString()
+	err = writeCSV(msgPerTAnalysis, "msgPerTAnalysis", []string{"MSG"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+	fmt.Println("avg message per T ", msgPerTAvg)
 	log.Println("Simulation Done")
 }
 
@@ -220,6 +240,32 @@ func runLinkAnalysis() {
 				updateConvergence(time.Since(StartTime))
 
 			case <-closing:
+				for _, p := range allPeers {
+					id := idMap[p.ID()]
+					convMsg[id] = status.MsgLen(id)
+				}
+				return
+			}
+		}
+	}()
+}
+
+func runMsgAnalysis() {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		for {
+			select {
+			case p := <-selection.ExpiredSaltChan:
+				pID := idMap[p]
+				msgPerTList[pID] = append(msgPerTList[pID], status.MsgLen(pID))
+				status.ClearStatusMap(pID)
+			case <-saltTermChan:
+				// if some node's salt is not expired
+				for i := range allPeers {
+					msgPerTList[uint16(i)] = append(msgPerTList[uint16(i)], status.MsgLen(uint16(i)))
+				}
 				return
 			}
 		}
@@ -257,9 +303,4 @@ func updateConvergence(time time.Duration) {
 	c := (float64(counter) / float64(N)) * 100
 	avg := float64(avgNeighbors) / float64(N)
 	RecordConv.Append(Convergence{time, c, avg})
-}
-
-func updateConvergenceMsg(from, to uint16) {
-	convMsg[from] = status.MsgLen(from)
-	convMsg[to] = status.MsgLen(to)
 }
