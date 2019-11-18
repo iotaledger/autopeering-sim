@@ -1,0 +1,4 @@
+N=100
+SimDuration=1000
+VisualEnabled=false
+Known=0.01

@@ -15,6 +15,30 @@ import (
 	"go.uber.org/zap"
 )
 
+type MsgContent struct {
+	p peer.ID
+	t byte
+}
+
+func (m *MsgContent) GetPeer() peer.ID {
+	return m.p
+}
+
+func (m *MsgContent) GetType() byte {
+	return m.t
+}
+
+var UpdateMsg = make(chan MsgContent, 10)
+
+const (
+	// VersionNum specifies the expected version number for this Protocol.
+	VersionNum = 0
+
+	pingExpiration     = 12 * time.Hour // time until a peer verification expires
+	maxPeersInResponse = 6              // maximum number of peers returned in DiscoveryResponse
+	maxNumServices     = 5
+)
+
 // The Protocol handles the peer discovery.
 // It responds to incoming messages and sends own requests when needed.
 type Protocol struct {
@@ -94,6 +118,11 @@ func (p *Protocol) GetVerifiedPeer(id peer.ID, addr string) *peer.Peer {
 // GetVerifiedPeers returns all the currently managed peers that have been verified at least once.
 func (p *Protocol) GetVerifiedPeers() []*peer.Peer {
 	return unwrapPeers(p.mgr.getVerifiedPeers())
+}
+
+// GetKnownPeers returns all the currently managed peers, including those are not verified.
+func (p *Protocol) GetKnownPeers() []*peer.Peer {
+	return unwrapPeers(p.mgr.getKnownPeers())
 }
 
 // HandleMessage responds to incoming peer discovery messages.

@@ -355,3 +355,11 @@ func (m *manager) isKnown(id peer.ID) bool {
 
 	return containsPeer(m.active, id) || containsPeer(m.replacements, id)
 }
+
+// getKnownPeers returns all the currently managed peers, including those are not verified .
+func (m *manager) getKnownPeers() []*mpeer {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	return m.known
+}
