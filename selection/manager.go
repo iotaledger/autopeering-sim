@@ -135,6 +135,7 @@ Loop:
 						m.dropPeer(toDrop)
 					}
 				}
+				m.dropOfflineNeighbors()
 				go m.updateOutbound(updateOutboundDone)
 			}
 		case <-updateOutboundDone:
@@ -363,4 +364,26 @@ func (m *manager) dropPeer(p *peer.Peer) {
 	m.net.DropPeer(p)
 	// signal the drop
 	Events.Dropped.Trigger(&DroppedEvent{Self: m.self(), DroppedID: p.ID()})
+}
+
+func (m *manager) dropOfflineNeighbors() {
+	toDrop := make(map[string]*peer.Peer)
+	for _, neighbor := range m.getNeighbors() {
+		toDrop[neighbor.ID().String()] = neighbor
+	}
+
+	for _, peer := range m.peersFunc() {
+		if len(toDrop) == 0 {
+			break
+		}
+		for _, neighbor := range toDrop {
+			if neighbor.ID().String() == peer.ID().String() {
+				delete(toDrop, neighbor.ID().String())
+			}
+		}
+	}
+
+	for _, neighbor := range toDrop {
+		m.dropNeighbor(neighbor.ID())
+	}
 }
