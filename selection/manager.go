@@ -366,12 +366,14 @@ func (m *manager) dropPeer(p *peer.Peer) {
 	Events.Dropped.Trigger(&DroppedEvent{Self: m.self(), DroppedID: p.ID()})
 }
 
+// removes selected neighbors that are offline
 func (m *manager) dropOfflineNeighbors() {
 	toDrop := make(map[string]*peer.Peer)
 	for _, neighbor := range m.getNeighbors() {
 		toDrop[neighbor.ID().String()] = neighbor
 	}
-
+	// loop over the known peers and check if any of the
+	// currently selected neighbors are offline
 	for _, peer := range m.peersFunc() {
 		if len(toDrop) == 0 {
 			break
@@ -383,6 +385,7 @@ func (m *manager) dropOfflineNeighbors() {
 		}
 	}
 
+	// drop offline neighbors
 	for _, neighbor := range toDrop {
 		m.dropNeighbor(neighbor.ID())
 	}
