@@ -74,8 +74,6 @@ func deletePeer(list []*mpeer, i int) ([]*mpeer, *mpeer) {
 	copy(list[i:], list[i+1:])
 	list[len(list)-1] = nil
 
-	Events.PeerDeleted.Trigger(&DeletedEvent{Peer: unwrapPeer(p)})
-
 	return list[:len(list)-1], p
 }
 
