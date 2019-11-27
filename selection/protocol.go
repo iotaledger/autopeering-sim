@@ -130,7 +130,7 @@ func (p *Protocol) HandleMessage(s *server.Server, from *peer.Peer, data []byte)
 
 // RequestPeering sends a peering request to the given peer. This method blocks
 // until a response is received and the status answer is returned.
-func (p *Protocol) RequestPeering(to *peer.Peer, salt *salt.Salt, myServices peer.ServiceMap) (peer.ServiceMap, error) {
+func (p *Protocol) RequestPeering(to *peer.Peer, salt *salt.Salt, myServices peer.ServiceMap) (bool, peer.ServiceMap, error) {
 	p.disc.EnsureVerified(to)
 
 	// create the request package
@@ -140,20 +140,22 @@ func (p *Protocol) RequestPeering(to *peer.Peer, salt *salt.Salt, myServices pee
 	// compute the message hash
 	hash := server.PacketHash(data)
 
+	var status bool
 	var services peer.ServiceMap
 	callback := func(m interface{}) bool {
 		res := m.(*pb.PeeringResponse)
 		if !bytes.Equal(res.GetReqHash(), hash) {
 			return false
 		}
-		if res.GetStatus() {
+		status = res.GetStatus()
+		if status {
 			services = peer.NewServiceMapFromProto(res.GetServices())
 		}
 		return true
 	}
 
 	err := <-p.Protocol.SendExpectingReply(to, data, pb.MPeeringResponse, callback)
-	return services, err
+	return status, services, err
 }
 
 // DropPeer sends a PeeringDrop to the given peer.
@@ -190,10 +192,10 @@ func newPeeringRequest(toAddr string, salt *salt.Salt, services peer.ServiceMap)
 	}
 }
 
-func newPeeringResponse(reqData []byte, services peer.ServiceMap) *pb.PeeringResponse {
+func newPeeringResponse(reqData []byte, status bool, services peer.ServiceMap) *pb.PeeringResponse {
 	return &pb.PeeringResponse{
 		ReqHash:  server.PacketHash(reqData),
-		Status:   len(services) > 0,
+		Status:   status,
 		Services: peer.ServiceMapToProto(services),
 	}
 }
@@ -268,7 +270,9 @@ func (p *Protocol) handlePeeringRequest(s *server.Server, from *peer.Peer, rawDa
 
 	services := peer.NewServiceMapFromProto(m.GetServices())
 
-	res := newPeeringResponse(rawData, p.mgr.acceptRequest(from, salt, services))
+	status, myServices := p.mgr.acceptRequest(from, salt, services)
+
+	res := newPeeringResponse(rawData, status, myServices)
 	s.Send(from.Address(), marshal(res))
 }
 

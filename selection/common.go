@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	UpdateOutboundInterval = 1000 * time.Millisecond
+	UpdateOutboundInterval = 100 * time.Millisecond
 
 	InboundRequestQueue = 1000
 	DropQueue           = 1000
@@ -41,4 +41,5 @@ type Parameters struct {
 	InboundSelectionDisabled  bool
 	OutboundSelectionDisabled bool
 	DropNeighborsOnUpdate     bool // Whether all the neighbors are dropped when the distance is updated
+	RequiredService           []string
 }

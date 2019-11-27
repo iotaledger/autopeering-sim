@@ -79,8 +79,9 @@ func (n testNet) DropPeer(p *peer.Peer) {
 	n.mgr[p.ID()].dropNeighbor(n.local().ID())
 }
 
-func (n testNet) RequestPeering(p *peer.Peer, s *salt.Salt, services peer.ServiceMap) (peer.ServiceMap, error) {
-	return n.mgr[p.ID()].acceptRequest(n.self, s, services), nil
+func (n testNet) RequestPeering(p *peer.Peer, s *salt.Salt, services peer.ServiceMap) (bool, peer.ServiceMap, error) {
+	status, myServices := n.mgr[p.ID()].acceptRequest(n.self, s, services)
+	return status, myServices, nil
 }
 
 func (n testNet) GetKnownPeers() []*peer.Peer {
