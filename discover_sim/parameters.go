@@ -1,10 +1,11 @@
 package main
 
 type Param struct {
-	N           int64
-	Known       float64
-	vEnabled    bool
-	SimDuration int64
+	N            int64
+	Known        float64
+	vEnabled     bool
+	SimDuration  int64
+	DiscResStrat int64
 }
 
 func setParam(p *Param) {
@@ -20,5 +21,6 @@ func setParam(p *Param) {
 	if p.SimDuration != 0 {
 		SimDuration = int(p.SimDuration)
 	}
+	DiscResStrat = int(p.DiscResStrat)
 	vEnabled = p.vEnabled
 }

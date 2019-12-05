@@ -3,29 +3,35 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/iotaledger/autopeering-sim/discover"
 	"github.com/iotaledger/autopeering-sim/peer"
+	"github.com/iotaledger/autopeering-sim/selection"
 	"github.com/iotaledger/autopeering-sim/server"
 	"github.com/iotaledger/autopeering-sim/transport"
 )
 
 var (
-	allPeers    []simPeer
-	protocolMap = make(map[peer.ID]*discover.Protocol)
-	idMap       = make(map[peer.ID]uint16)
-	closing     = make(chan struct{})
-	RecordKnown = NewConvergenceList()
-	SentMsg     = make(map[uint16][]byte)
-	StartTime   time.Time
-	wg          sync.WaitGroup
+	allPeers          []simPeer
+	protocolMap       = make(map[peer.ID]*discover.Protocol)
+	selectProtocolMap = make(map[peer.ID]*selection.Protocol)
+	idMap             = make(map[peer.ID]uint16)
+	closing           = make(chan struct{})
+	closingSalt       = make(chan struct{})
+	RecordKnown       = NewConvergenceList()
+	SentMsg           = make(map[uint16][]byte)
+	StartTime         time.Time
+	wg                sync.WaitGroup
 
-	N           = 100
-	vEnabled    = false
-	SimDuration = 300
-	Known       = 0.01
+	N            = 100
+	vEnabled     = false
+	SimDuration  = 300
+	Known        = 0.01
+	SaltLifetime = 300 * time.Second
+	DiscResStrat = 0 //0: random, 1: nearest
 )
 
 func RunSim() {
@@ -41,6 +47,7 @@ func RunSim() {
 		name := fmt.Sprintf("%d", i)
 		network.AddTransport(name)
 		allPeers[i] = newPeer(name, (time.Duration(initialSalt) * time.Second))
+		initialSalt = rand.Float64() * SaltLifetime.Seconds() // random
 	}
 
 	log.Println("Initiate peers...")
@@ -60,13 +67,26 @@ func RunSim() {
 
 		cfg = discover.Config{Log: p.log,
 			MasterPeers: boot,
+			Param: &discover.Parameters{
+				DiscoverStrategy: DiscResStrat,
+			},
 		}
 		protocol := discover.New(p.local, cfg)
 		serverMap[id] = server.Listen(p.local, network.GetTransport(name), p.log, protocol)
 
 		protocolMap[id] = protocol
+
+		// selection initialization
+		selCfg := selection.Config{Log: p.log,
+			Param: &selection.Parameters{
+				SaltLifetime: SaltLifetime,
+			},
+		}
+		selProtocol := selection.New(p.local, protocol, selCfg)
+		selectProtocolMap[id] = selProtocol
 	}
 
+	updateSalt()
 	Analysis()
 
 	StartTime = time.Now()
@@ -74,21 +94,6 @@ func RunSim() {
 		srv := serverMap[p.peer.ID()]
 		protocolMap[p.peer.ID()].Start(srv)
 	}
-	// entry nodes first connect to each other
-	/*
-	    fmt.Println(time.Now())
-	    for i := 0; i < numEntry; i++ {
-			srv := serverMap[allPeers[i].peer.ID()]
-			protocolMap[allPeers[i].peer.ID()].Start(srv)
-		}
-		time.Sleep(time.Duration(40) * time.Second)
-
-	    fmt.Println(time.Now())
-	    for i := numEntry; i < N; i++ {
-			srv := serverMap[allPeers[i].peer.ID()]
-			protocolMap[allPeers[i].peer.ID()].Start(srv)
-		}
-	*/
 
 	time.Sleep(time.Duration(SimDuration) * time.Second)
 
@@ -100,6 +105,7 @@ func RunSim() {
 		p.db.Close()
 	}
 	close(closing)
+	close(closingSalt)
 	log.Println("Closing Done")
 
 	// Wait until analysis goroutine stops
@@ -132,6 +138,27 @@ func main() {
 
 	fmt.Println("start sim")
 	RunSim()
+}
+
+func updateSalt() {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		ticker := time.NewTicker(200 * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				for _, protocol := range selectProtocolMap {
+					protocol.UpdateSalt()
+				}
+			case <-closingSalt:
+				return
+			}
+		}
+	}()
 }
 
 func Analysis() {

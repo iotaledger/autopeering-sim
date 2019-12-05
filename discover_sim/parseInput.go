@@ -67,6 +67,11 @@ func (p *Param) selectParam(paramtype, value string) error {
 		if err != nil {
 			panic("Unable to parse SimDuration")
 		}
+	case "DiscResStrat":
+		p.DiscResStrat, err = strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			panic("Unable to parse DiscResStrat")
+		}
 	}
 	return err
 }

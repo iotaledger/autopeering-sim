@@ -43,6 +43,9 @@ const (
 	DefaultMaxManaged = 1000
 	// DefaultMaxReplacements is the default maximum number of peers kept in the replacement list.
 	DefaultMaxReplacements = 10
+
+	// DefaultDiscoverStrategy is the default strategy to select peers returned in DiscoveryResponse.
+	DefaultDiscoverStrategy = 0
 )
 
 // Parameters holds the parameters that can be configured.
@@ -52,4 +55,5 @@ type Parameters struct {
 	QueryInterval    time.Duration // time interval after which peers are queried for new peers
 	MaxManaged       int           // maximum number of peers that can be managed
 	MaxReplacements  int           // maximum number of peers kept in the replacement list
+	DiscoverStrategy int           // strategy of select peers in DiscoveryResponse
 }

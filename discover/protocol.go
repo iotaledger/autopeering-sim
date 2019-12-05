@@ -10,6 +10,7 @@ import (
 	"github.com/iotaledger/autopeering-sim/peer"
 	peerpb "github.com/iotaledger/autopeering-sim/peer/proto"
 	"github.com/iotaledger/autopeering-sim/peer/service"
+	"github.com/iotaledger/autopeering-sim/salt"
 	"github.com/iotaledger/autopeering-sim/server"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -29,15 +30,6 @@ func (m *MsgContent) GetType() byte {
 }
 
 var UpdateMsg = make(chan MsgContent, 10)
-
-const (
-	// VersionNum specifies the expected version number for this Protocol.
-	VersionNum = 0
-
-	pingExpiration     = 12 * time.Hour // time until a peer verification expires
-	maxPeersInResponse = 6              // maximum number of peers returned in DiscoveryResponse
-	maxNumServices     = 5
-)
 
 // The Protocol handles the peer discovery.
 // It responds to incoming messages and sends own requests when needed.
@@ -156,7 +148,13 @@ func (p *Protocol) HandleMessage(s *server.Server, fromAddr string, fromID peer.
 			return true, errors.Wrap(err, "invalid message")
 		}
 		if p.validateDiscoveryRequest(s, fromAddr, fromID, m) {
-			p.handleDiscoveryRequest(s, fromAddr, data)
+			if discoverStrategy == 0 {
+				// random
+				p.handleDiscoveryReqRandom(s, fromAddr, data)
+			} else if discoverStrategy == 1 {
+				// nearest
+				p.handleDiscoveryReqNearest(s, fromAddr, fromID, data, m)
+			}
 		}
 
 	// DiscoveryResponse
@@ -185,6 +183,7 @@ func (p *Protocol) ping(to *peer.Peer) error {
 // sendPing sends a ping to the specified address and expects a matching reply.
 // This method is non-blocking, but it returns a channel that can be used to query potential errors.
 func (p *Protocol) sendPing(toAddr string, toID peer.ID) <-chan error {
+	UpdateMsg <- MsgContent{p.local().Peer.ID(), 'O'}
 	ping := newPing(p.LocalAddr(), toAddr)
 	data := marshal(ping)
 
@@ -206,9 +205,12 @@ func (p *Protocol) sendPing(toAddr string, toID peer.ID) <-chan error {
 func (p *Protocol) discoveryRequest(to *peer.Peer) ([]*peer.Peer, error) {
 	p.EnsureVerified(to)
 
+	UpdateMsg <- MsgContent{p.local().Peer.ID(), 'Q'}
 	// create the request package
+	//req := newDiscoveryRequest(toAddr)
 	toAddr := to.Address()
-	req := newDiscoveryRequest(toAddr)
+	mySalt := p.mgr.net.local().GetPublicSalt()
+	req := newDiscoveryRequest(to.Address(), mySalt)
 	data := marshal(req)
 
 	// compute the message hash
@@ -285,10 +287,11 @@ func newPong(toAddr string, reqData []byte, services *service.Record) *pb.Pong {
 	}
 }
 
-func newDiscoveryRequest(toAddr string) *pb.DiscoveryRequest {
+func newDiscoveryRequest(toAddr string, salt *salt.Salt) *pb.DiscoveryRequest {
 	return &pb.DiscoveryRequest{
 		To:        toAddr,
 		Timestamp: time.Now().Unix(),
+		Salt:      salt.ToProto(),
 	}
 }
 
@@ -349,6 +352,7 @@ func (p *Protocol) validatePing(s *server.Server, fromAddr string, m *pb.Ping) b
 func (p *Protocol) handlePing(s *server.Server, fromAddr string, fromID peer.ID, fromKey peer.PublicKey, rawData []byte) {
 	// create and send the pong response
 	pong := newPong(fromAddr, rawData, s.Local().Services().CreateRecord())
+	UpdateMsg <- MsgContent{p.local().Peer.ID(), 'I'}
 
 	p.log.Debugw("send message",
 		"type", pong.Name(),
@@ -454,7 +458,7 @@ func (p *Protocol) validateDiscoveryRequest(s *server.Server, fromAddr string, f
 	return true
 }
 
-func (p *Protocol) handleDiscoveryRequest(s *server.Server, fromAddr string, rawData []byte) {
+func (p *Protocol) handleDiscoveryReqRandom(s *server.Server, fromAddr string, rawData []byte) {
 	// get a random list of verified peers
 	peers := p.mgr.getRandomPeers(MaxPeersInResponse, 1)
 	res := newDiscoveryResponse(rawData, peers)
@@ -462,6 +466,29 @@ func (p *Protocol) handleDiscoveryRequest(s *server.Server, fromAddr string, raw
 	p.log.Debugw("send message",
 		"type", res.Name(),
 		"addr", fromAddr,
+		"pLen", len(peers),
+	)
+	s.Send(fromAddr, marshal(res))
+}
+
+func (p *Protocol) handleDiscoveryReqNearest(s *server.Server, fromAddr string, fromID peer.ID, rawData []byte, m *pb.DiscoveryRequest) {
+	// get a list of verified and closest peers
+	salt, err := salt.FromProto(m.GetSalt())
+	if err != nil {
+		p.log.Debugw("invalid message, cannot get salt",
+			"type", m.Name(),
+			"timestamp", time.Unix(m.GetTimestamp(), 0),
+		)
+		return
+	}
+
+	peers := p.mgr.getClosestPeers(MaxPeersInResponse, 1, fromID, salt)
+	res := newDiscoveryResponse(rawData, peers)
+
+	p.log.Debugw("send message",
+		"type", res.Name(),
+		"addr", fromAddr,
+		"pLen", len(peers),
 	)
 	s.Send(fromAddr, marshal(res))
 }

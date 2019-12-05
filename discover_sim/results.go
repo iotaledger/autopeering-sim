@@ -19,7 +19,7 @@ func knownPeersToString(c []Convergence) (output [][]string) {
 	for _, line := range c {
 		record := []string{
 			fmt.Sprintf("%v", line.timestamp.Seconds()),
-			fmt.Sprintf("%v", float64(line.counter)/float64(N) * 100.),
+			fmt.Sprintf("%v", float64(line.counter)/float64(N)*100.),
 			fmt.Sprintf("%v", line.avgKnown),
 		}
 		output = append(output, record)

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/iotaledger/autopeering-sim/peer"
+	"github.com/iotaledger/autopeering-sim/salt"
 	"github.com/iotaledger/autopeering-sim/server"
 	"go.uber.org/zap"
 )
@@ -16,6 +17,7 @@ var (
 	queryInterval    = DefaultQueryInterval    // time interval after which peers are queried for new peers
 	maxManaged       = DefaultMaxManaged       // maximum number of peers that can be managed
 	maxReplacements  = DefaultMaxReplacements  // maximum number of peers kept in the replacement list
+	discoverStrategy = DefaultDiscoverStrategy // strategy of select peers in DiscoveryResponse
 )
 
 type network interface {
@@ -54,6 +56,7 @@ func newManager(net network, masters []*peer.Peer, log *zap.SugaredLogger, param
 		if param.MaxReplacements > 0 {
 			maxReplacements = param.MaxReplacements
 		}
+		discoverStrategy = param.DiscoverStrategy
 	}
 
 	m := &manager{
@@ -328,6 +331,34 @@ func (m *manager) getRandomPeers(n int, minVerified uint) []*peer.Peer {
 	return peers
 }
 
+// getClosestPeers returns a list of closest peers.
+func (m *manager) getClosestPeers(n int, minVerified uint, fromID peer.ID, salt *salt.Salt) []*peer.Peer {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	// filter out unverified peers
+	verifiedPeers := make([]*peer.Peer, 0, len(m.active))
+	peers := make([]*peer.Peer, 0, n)
+	for _, mp := range m.active {
+		if mp.verifiedCount < minVerified {
+			continue
+		}
+		verifiedPeers = append(verifiedPeers, unwrapPeer(mp))
+	}
+
+	if n > len(verifiedPeers) {
+		n = len(verifiedPeers)
+	}
+
+	// sort verified peers by distance
+	distList := peer.SortBySalt(fromID.Bytes(), salt.GetBytes(), verifiedPeers)
+	for i := 0; i < n; i++ {
+		peers = append(peers, distList[i].Remote)
+	}
+
+	return peers
+}
+
 // getVerifiedPeers returns all the currently managed peers that have been verified at least once.
 func (m *manager) getVerifiedPeers() []*mpeer {
 	m.mutex.Lock()
@@ -361,5 +392,5 @@ func (m *manager) getKnownPeers() []*mpeer {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	return m.known
+	return m.active
 }

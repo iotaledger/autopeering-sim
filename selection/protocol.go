@@ -334,3 +334,10 @@ func (p *Protocol) validatePeeringDrop(s *server.Server, fromAddr string, m *pb.
 func (p *Protocol) handlePeeringDrop(fromID peer.ID) {
 	p.mgr.dropNeighbor(fromID)
 }
+
+// FOR SIMULATION: Update salt
+func (p *Protocol) UpdateSalt() {
+    if p.mgr.net.local().GetPublicSalt().Expired() {
+        p.mgr.updateSalt()
+    }
+}
