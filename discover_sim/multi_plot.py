@@ -9,7 +9,7 @@ xscale = 'linear'
 ycol = 1 
 zcol = 2  # last column in the csv file
 folder = "data/"
-ary = ["nearest", "random"]
+ary = ["start at the same time", "entry start"]
 loop = 2
 
 
@@ -21,7 +21,7 @@ def main():
 def printKnownPeerAnalysis(): 
     filename = folder+'plot_knownPeerAnalysis'
     for i in range(loop):
-        label= "Disc_res_strategy="+str(ary[i])
+        label= "sim_start="+str(ary[i])
         readFile = 'knownPeerAnalysis_'+str(i)
         partPlot2("KnownPeerAnalysis", readFile, filename, label)
     plt.ylabel("Nodes know all peers in network [%]")
@@ -33,7 +33,7 @@ def printKnownPeerAnalysis():
 def printKnownPeerAnalysis1(): 
     filename = folder+'plot_knownPeerAnalysis1'
     for i in range(loop):
-        label= "Disc_res_strategy="+str(ary[i])
+        label= "sim_start="+str(ary[i])
         readFile = 'knownPeerAnalysis_'+str(i)
         partPlot2_1("KnownPeerAnalysis1", readFile, filename, label)
     plt.ylabel("Avg # of known peers")
@@ -53,7 +53,7 @@ def printSentMsgAnalysis():
 def printSentMsgPdfAnalysis(): 
     filename = folder+'plot_sentMsgPdfAnalysis'
     for i in range(loop):
-        label= "Disc_res_strategy="+str(ary[i])
+        label= "sim_start="+str(ary[i])
         readFile = 'sentMsgPdfAnalysis_'+str(i)
         partPlot2("sentMsgPdfAnalysis", readFile, filename, label)
     plt.xlabel("# of sent messages")

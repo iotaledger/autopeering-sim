@@ -154,6 +154,9 @@ func (p *Protocol) HandleMessage(s *server.Server, fromAddr string, fromID peer.
 			} else if discoverStrategy == 1 {
 				// nearest
 				p.handleDiscoveryReqNearest(s, fromAddr, fromID, data, m)
+			} else {
+				// half random, half nearest
+				p.handleDiscoveryReqHalf(s, fromAddr, fromID, data, m)
 			}
 		}
 
@@ -483,6 +486,31 @@ func (p *Protocol) handleDiscoveryReqNearest(s *server.Server, fromAddr string, 
 	}
 
 	peers := p.mgr.getClosestPeers(MaxPeersInResponse, 1, fromID, salt)
+	res := newDiscoveryResponse(rawData, peers)
+
+	p.log.Debugw("send message",
+		"type", res.Name(),
+		"addr", fromAddr,
+		"pLen", len(peers),
+	)
+	s.Send(fromAddr, marshal(res))
+}
+
+func (p *Protocol) handleDiscoveryReqHalf(s *server.Server, fromAddr string, fromID peer.ID, rawData []byte, m *pb.DiscoveryRequest) {
+	// get a random list of verified peers
+	peers := []*peer.Peer{}
+	peers = append(peers, p.mgr.getRandomPeers(MaxPeersInResponse/2, 1)...)
+	// get a list of verified and closest peers
+	salt, err := salt.FromProto(m.GetSalt())
+	if err != nil {
+		p.log.Debugw("invalid message, cannot get salt",
+			"type", m.Name(),
+			"timestamp", time.Unix(m.GetTimestamp(), 0),
+		)
+		return
+	}
+
+	peers = append(peers, p.mgr.getClosestPeers(MaxPeersInResponse/2, 1, fromID, salt)...)
 	res := newDiscoveryResponse(rawData, peers)
 
 	p.log.Debugw("send message",

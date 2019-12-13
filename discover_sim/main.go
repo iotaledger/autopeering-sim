@@ -31,7 +31,7 @@ var (
 	SimDuration  = 300
 	Known        = 0.01
 	SaltLifetime = 300 * time.Second
-	DiscResStrat = 0 //0: random, 1: nearest
+	DiscResStrat = 0 //0: random, 1: nearest, 2:half
 )
 
 func RunSim() {
@@ -59,11 +59,26 @@ func RunSim() {
 
 		var cfg discover.Config
 		var boot []*peer.Peer
+		//var ary []int
+		// fixed set
 		for j := 0; j < numEntry; j++ {
 			if i != j {
 				boot = append(boot, allPeers[j].peer)
+				//ary = append(ary, j)
 			}
 		}
+		// random set
+		/*
+		   for j := 0; j < numEntry; j++ {
+		       randI := rand.Intn(N)
+		       if i != randI && checkBoot(randI, ary) {
+		           boot = append(boot, allPeers[randI].peer)
+		           ary = append(ary, randI)
+		       } else {
+		           j--
+		       }
+		   }
+		*/
 
 		cfg = discover.Config{Log: p.log,
 			MasterPeers: boot,
@@ -138,6 +153,15 @@ func main() {
 
 	fmt.Println("start sim")
 	RunSim()
+}
+
+func checkBoot(randI int, ary []int) bool {
+	for _, v := range ary {
+		if v == randI {
+			return false
+		}
+	}
+	return true
 }
 
 func updateSalt() {

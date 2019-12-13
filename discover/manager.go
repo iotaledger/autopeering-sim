@@ -89,7 +89,7 @@ func (m *manager) loop() {
 	defer m.wg.Done()
 
 	var (
-		reverify     = time.NewTimer(0) // setting this to 0 will cause a trigger right away
+		reverify     = time.NewTimer(5 * time.Second) // setting this to 0 will cause a trigger right away
 		reverifyDone chan struct{}
 
 		query     = time.NewTimer(server.ResponseTimeout) // trigger the first query after the reverify
