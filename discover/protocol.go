@@ -2,6 +2,7 @@ package discover
 
 import (
 	"bytes"
+	"net"
 	"sync"
 	"time"
 
@@ -287,11 +288,14 @@ func (p *Protocol) validatePing(s *server.Server, fromAddr string, m *pb.Ping) b
 		return false
 	}
 	// check that From matches the package sender address
-	if m.GetFrom() != fromAddr {
+	rcvAddr, _, _ := net.SplitHostPort(m.GetFrom())
+	fAddr, _, _ := net.SplitHostPort(fromAddr)
+	if rcvAddr != fAddr {
+		//if m.GetFrom() != fromAddr {
 		p.log.Debugw("invalid message",
 			"type", m.Name(),
-			"from", m.GetFrom(),
-			"want", fromAddr,
+			"from", rcvAddr,
+			"want", fAddr,
 		)
 		return false
 	}
