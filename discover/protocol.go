@@ -108,7 +108,7 @@ func (p *Protocol) HandleMessage(s *server.Server, fromAddr string, fromID peer.
 			return true, errors.Wrap(err, "invalid message")
 		}
 		if p.validatePing(s, fromAddr, m) {
-			p.handlePing(s, fromAddr, fromID, fromKey, data)
+			p.handlePing(s, m.GetFrom(), fromID, fromKey, data)
 		}
 
 	// Pong
