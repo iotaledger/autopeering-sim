@@ -2,7 +2,6 @@ package discover
 
 import (
 	"bytes"
-	"net"
 	"sync"
 	"time"
 
@@ -108,7 +107,7 @@ func (p *Protocol) HandleMessage(s *server.Server, fromAddr string, fromID peer.
 			return true, errors.Wrap(err, "invalid message")
 		}
 		if p.validatePing(s, fromAddr, m) {
-			p.handlePing(s, m.GetFrom(), fromID, fromKey, data)
+			p.handlePing(s, fromAddr, fromID, fromKey, data)
 		}
 
 	// Pong
@@ -287,18 +286,18 @@ func (p *Protocol) validatePing(s *server.Server, fromAddr string, m *pb.Ping) b
 		)
 		return false
 	}
-	// check that From matches the package sender address
-	rcvAddr, _, _ := net.SplitHostPort(m.GetFrom())
-	fAddr, _, _ := net.SplitHostPort(fromAddr)
-	if rcvAddr != fAddr {
-		//if m.GetFrom() != fromAddr {
-		p.log.Debugw("invalid message",
-			"type", m.Name(),
-			"from", rcvAddr,
-			"want", fAddr,
-		)
-		return false
-	}
+	// // check that From matches the package sender address
+	// rcvAddr, _, _ := net.SplitHostPort(m.GetFrom())
+	// fAddr, _, _ := net.SplitHostPort(fromAddr)
+	// if rcvAddr != fAddr {
+	// 	//if m.GetFrom() != fromAddr {
+	// 	p.log.Debugw("invalid message",
+	// 		"type", m.Name(),
+	// 		"from", rcvAddr,
+	// 		"want", fAddr,
+	// 	)
+	// 	return false
+	// }
 	// check that To matches the local address
 	if m.GetTo() != s.LocalAddr() {
 		p.log.Debugw("invalid message",
