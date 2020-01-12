@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/iotaledger/autopeering-sim/peer"
-	"github.com/iotaledger/autopeering-sim/salt"
+	"github.com/iotaledger/goshimmer/packages/autopeering/peer"
+	"github.com/iotaledger/goshimmer/packages/autopeering/salt"
 	"go.uber.org/zap"
 )
 
