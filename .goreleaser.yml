@@ -26,6 +26,7 @@ archives:
   - README.md
   - LICENSE
   - config.json
+  - plot.py
 checksum:
   name_template: 'checksums.txt'
 snapshot:
