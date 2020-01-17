@@ -25,6 +25,7 @@ type Event struct {
 
 var (
 	clients    = make(map[*websocket.Conn]bool)
+	wsChan     = make(chan *websocket.Conn, 1)
 	Visualizer = make(chan *Event, 100000)
 	upgrader   = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
@@ -73,7 +74,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// register client
-	clients[ws] = true
+	wsChan <- ws
 }
 
 func echo() {
@@ -82,6 +83,13 @@ func echo() {
 			time.Sleep(50 * time.Millisecond)
 		}
 		event := fmt.Sprintf("%d %s %s", val.Type, val.Source, val.Dest)
+
+		// check for new clients
+		select {
+		case ws := <-wsChan:
+			clients[ws] = true
+		default:
+		}
 
 		// send to every client that is currently connected
 		for client := range clients {
