@@ -7,14 +7,16 @@
 *.dll
 *.so
 *.dylib
+*.dot
 sim
+!sim/
 simulation
+!simulation/
 autopeering
+!autopeering/
 autopeering-sim
-/simulation/*.dot
-/simulation/l*.txt
-/data/*
-/test_node/*
+/data/
+/dist/
 
 # Test binary, built with `go test -c`
 *.test
