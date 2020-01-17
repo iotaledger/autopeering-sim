@@ -35,6 +35,7 @@ var (
 	N            = 100
 	vEnabled     = false
 	SimDuration  = 300
+	NeighborSize = 4
 	SaltLifetime = 300 * time.Second
 	DropAllFlag  = false
 )
@@ -42,10 +43,10 @@ var (
 // dummyDiscovery is a dummy implementation of DiscoveryProtocol never returning any verified peers.
 type dummyDiscovery struct{}
 
-func (d dummyDiscovery) IsVerified(peer.ID, string) bool                    { return true }
-func (d dummyDiscovery) EnsureVerified(p *peer.Peer)                        {}
-func (d dummyDiscovery) GetVerifiedPeer(id peer.ID, addr string) *peer.Peer { return peerMap[id] }
-func (d dummyDiscovery) GetVerifiedPeers() []*peer.Peer                     { return allPeers }
+func (d dummyDiscovery) IsVerified(peer.ID, string) bool                 { return true }
+func (d dummyDiscovery) EnsureVerified(*peer.Peer)                       {}
+func (d dummyDiscovery) GetVerifiedPeer(id peer.ID, _ string) *peer.Peer { return peerMap[id] }
+func (d dummyDiscovery) GetVerifiedPeers() []*peer.Peer                  { return allPeers }
 
 func RunSim() {
 	allPeers = make([]*peer.Peer, N)
@@ -59,6 +60,14 @@ func RunSim() {
 	selection.Events.OutgoingPeering.Attach(events.NewClosure(func(e *selection.PeeringEvent) { outgoingChan <- e }))
 	selection.Events.Dropped.Attach(events.NewClosure(func(e *selection.DroppedEvent) { dropChan <- e }))
 
+	selection.SetParameters(selection.Parameters{
+		InboundNeighborSize:        NeighborSize,
+		OutboundNeighborSize:       NeighborSize,
+		SaltLifetime:               SaltLifetime,
+		OutboundUpdateInterval:     200 * time.Millisecond, // use exactly the same update time as previously
+		FullOutboundUpdateInterval: 200 * time.Millisecond,
+	})
+
 	//lambda := (float64(N) / SaltLifetime.Seconds()) * 10
 	initialSalt := 0.
 
@@ -67,19 +76,14 @@ func RunSim() {
 		name := fmt.Sprintf("%d", i)
 		network.AddTransport(name)
 
-		peer := newPeer(name, (time.Duration(initialSalt) * time.Second))
+		peer := newPeer(name, time.Duration(initialSalt)*time.Second)
 		allPeers[i] = peer.peer
 
 		id := peer.local.ID()
 		idMap[id] = uint16(i)
 		peerMap[id] = peer.peer
 
-		cfg := selection.Config{Log: peer.log,
-			Param: &selection.Parameters{
-				SaltLifetime:          SaltLifetime,
-				DropNeighborsOnUpdate: DropAllFlag,
-			},
-		}
+		cfg := selection.Config{Log: peer.log, DropOnUpdate: DropAllFlag}
 		protocol := selection.New(peer.local, disc, cfg)
 		serverMap[id] = server.Listen(peer.local, network.GetTransport(name), peer.log, protocol)
 
