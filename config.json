@@ -1,6 +1,7 @@
 {
-  "numbernodes": 100,
-  "duration": 100,
-  "saltlifetime": 3600,
-  "visualizationserver": true
+  "NumberNodes": 100,
+  "Duration": 100,
+  "SaltLifetime": 3600,
+  "VisualEnabled": true,
+  "DropOnUpdate": false
 }
