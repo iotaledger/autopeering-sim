@@ -52,19 +52,13 @@ Feel free to do your own simulations by following the steps below.
     cd autopeering-sim
     ```
 
-1. Enter into the `simulation` directory
-    
-    ```bash
-    cd simulation
-    ```
-
 1. Build the executable file
 
     ```bash
     go build -o sim
     ```
 
-1. If you want to change how the simulation behaves, edit the [parameters](#parameters) in the `input.txt` file
+1. If you want to change how the simulation behaves, edit the [parameters](#parameters) in the `config.json` file
 
 1. If you're using Windows, add the `.exe` file extension to the `sim` file
 
@@ -80,7 +74,7 @@ Feel free to do your own simulations by following the steps below.
 
 ## Step 2. Examine the data
 
-To analyse the results of the simulation, read the `.csv` files in the `simulation/data` directory:
+To analyse the results of the simulation, read the `.csv` files in the `data` directory:
 
 - *comvAnalysis*: Proportion of nodes with a complete neighborhood and average number of neighbors as a function of time
 - *linkAnalysis*: Probability Density Function (PDF) of the time a given link stays active
@@ -110,26 +104,26 @@ The script provides two figures:
 
 ## Parameters
 
-These parameters affect how the simulated autopeering behaves. As a result, changing these paramters has an affect on how long the protocol takes to converge.
+These parameters affect how the simulated autopeering behaves. As a result, changing these parameters has an affect on how long the protocol takes to converge.
 
 A description and functionality of some of the parameters is provided in ["Coordicide update - Autopeering: Part 1"](https://blog.iota.org/coordicide-update-autopeering-part-1-fc72e21c7e11) that accompanies the release of this code.
 
-To change any of these parameters, edit them in the `input.txt` file.
+To change any of these parameters, edit them in the `config.json` file.
 
-|   **Parameter**       |       **Type**    | **Description**    |
-|-------------------|:-------------:|:--------------|    
-|   `N`               |   int         | Number of peers |
-|   `T`               |   int         | Salt lifetime, in seconds |
-|   `SimDuration`     |   int         | Duration of the simulation, in seconds |
-|   `VisualEnabled`   |   bool        | Enable/disable the visualization |
-|   `dropAll`         |   bool        | Flag to drop all neighbors on each salt update |
+|   **Parameter**     |    **Type**   | **Description**    |
+|---------------------|:-------------:|:--------------|    
+|   `NumberNodes`     |   int         | Number of nodes |
+|   `Duration`        |   int         | Duration of the simulation, in seconds |
+|   `SaltLifetime`    |   int         | Salt lifetime, in seconds |
+|   `VisualEnabled`   |   bool        | Enable/disable the http visualization server |
+|   `DropOnUpdate`    |   bool        | Flag to drop all neighbors on each salt update |
 
 ## Development
 
 ### Protobuf files
 
 The messages exchanged during autopeering are serialized using [Protocol Buffers](https://developers.google.com/protocol-buffers/).
-To generate the coresponding go files after changing the the protobuf files, use the following command:
+To generate the corresponding go files after changing the the protobuf files, use the following command:
 
 ```bash
 make compile
