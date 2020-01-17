@@ -1,6 +1,6 @@
 {
   "numbernodes": 100,
-  "duration": 60,
+  "duration": 100,
   "saltlifetime": 3600,
-  "visualizationserver": false
+  "visualizationserver": true
 }
