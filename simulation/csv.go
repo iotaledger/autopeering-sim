@@ -1,10 +1,13 @@
-package main
+package simulation
 
 import (
+	"bufio"
 	"encoding/csv"
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/iotaledger/goshimmer/packages/autopeering/peer"
 )
 
 func initCSV(records [][]string, filename string) error {
@@ -24,7 +27,7 @@ func initCSV(records [][]string, filename string) error {
 	return err
 }
 
-func writeCSV(records [][]string, filename string, header ...[]string) error {
+func WriteCSV(records [][]string, filename string, header ...[]string) error {
 	var err error
 	if header != nil {
 		err = initCSV(header, filename) // requires format into [][]string
@@ -47,4 +50,26 @@ func writeCSV(records [][]string, filename string, header ...[]string) error {
 		log.Fatalln("error writing csv:", err)
 	}
 	return err
+}
+
+func WriteAdjlist(nodeMap map[peer.ID]Node, filename string) error {
+	const separator = ' '
+
+	f, err := os.Create("data/result_" + filename + ".txt")
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+	for id, node := range nodeMap {
+		_, _ = w.WriteString(id.String())
+		out := node.GetOutgoingNeighbors()
+		for _, n := range out {
+			_, _ = w.WriteRune(separator)
+			_, _ = w.WriteString(n.ID().String())
+		}
+		_, _ = w.WriteRune('\n')
+	}
+	return w.Flush()
 }

@@ -1,9 +1,11 @@
-package main
+package simulation
 
 import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/iotaledger/goshimmer/packages/autopeering/peer"
 )
 
 const (
@@ -14,10 +16,12 @@ const (
 	INCOMING = 'I'
 )
 
+var RecordConv = NewConvergenceList()
+
 type Status struct {
 	timestamp int64
 	opType    byte
-	toNode    uint16
+	toNode    peer.ID
 }
 
 type StatusSum struct {
@@ -29,8 +33,7 @@ type StatusSum struct {
 }
 
 type Link struct {
-	x            uint16
-	y            uint16
+	x, y         peer.ID
 	tEstablished int64
 	tDropped     int64
 }
@@ -48,7 +51,7 @@ type ConvergenceList struct {
 
 type StatusMap struct {
 	sync.Mutex
-	status map[uint16][]Status
+	status map[peer.ID][]Status
 }
 
 func NewConvergenceList() *ConvergenceList {
@@ -85,11 +88,11 @@ func (c *ConvergenceList) GetAvgNeighbors() float64 {
 
 func NewStatusMap() *StatusMap {
 	return &StatusMap{
-		status: make(map[uint16][]Status),
+		status: make(map[peer.ID][]Status),
 	}
 }
 
-func (s *StatusMap) Append(from, to uint16, op byte) {
+func (s *StatusMap) Append(from, to peer.ID, op byte) {
 	s.Lock()
 	defer s.Unlock()
 	st := Status{
@@ -100,10 +103,10 @@ func (s *StatusMap) Append(from, to uint16, op byte) {
 	s.status[from] = append(s.status[from], st)
 }
 
-func (s *StatusMap) GetSummary(peer uint16) (cnt StatusSum) {
+func (s *StatusMap) GetSummary(id peer.ID) (cnt StatusSum) {
 	s.Lock()
 	defer s.Unlock()
-	for _, t := range s.status[peer] {
+	for _, t := range s.status[id] {
 		switch t.opType {
 		case ACCEPTED:
 			cnt.accepted++
@@ -120,7 +123,7 @@ func (s *StatusMap) GetSummary(peer uint16) (cnt StatusSum) {
 	return cnt
 }
 
-func NewLink(x, y uint16, timestamp int64) Link {
+func NewLink(x, y peer.ID, timestamp int64) Link {
 	return Link{
 		x:            x,
 		y:            y,
@@ -128,7 +131,7 @@ func NewLink(x, y uint16, timestamp int64) Link {
 	}
 }
 
-func DropLink(x, y uint16, timestamp int64, list []Link) bool {
+func DropLink(x, y peer.ID, timestamp int64, list []Link) bool {
 	for i := len(list) - 1; i >= 0; i-- {
 		if (list[i].x == x && list[i].y == y) ||
 			(list[i].x == y && list[i].y == x) {
@@ -152,7 +155,7 @@ func (l Link) String() string {
 	return result
 }
 
-func LinkSurvival(links []Link) map[int64]int {
+func linkSurvival(links []Link) map[int64]int {
 	result := make(map[int64]int)
 	for _, l := range links {
 		if l.tDropped != 0 {

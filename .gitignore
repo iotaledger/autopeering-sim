@@ -13,7 +13,7 @@ autopeering
 autopeering-sim
 /simulation/*.dot
 /simulation/l*.txt
-/simulation/data/*
+/data/*
 /test_node/*
 
 # Test binary, built with `go test -c`
@@ -28,6 +28,3 @@ autopeering-sim
 # Project files
 .idea
 .vscode/
-
-# Database
-mainnetdb/

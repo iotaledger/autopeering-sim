@@ -24,7 +24,7 @@ To find out more details about the autopeering, read the following:
 
 The autopeering module is logically divided into two main submodules: `peer discovery` and `neighbor selection`. The former is responsible for operations such as discovering new peers and verifying their online status while the latter is responsible for finding and managing neighbors for our node. It encapsulates the network and the storage layer through the use of Go interfaces.
 
-![Autopeering design](simulation/images/AutoPeeringDesign.png)
+![Autopeering design](images/AutoPeeringDesign.png)
 
 ## Motivation
 
@@ -76,7 +76,7 @@ Feel free to do your own simulations by following the steps below.
 
 1. If you have set the visualization as enabled, open your browser and go to `http://localhost:8844`.
 
-![visualize simulation](simulation/images/animation.gif)
+![visualize simulation](images/animation.gif)
 
 ## Step 2. Examine the data
 
@@ -106,7 +106,7 @@ The script provides two figures:
 - The proportion of nodes with a complete neighborhood and the average number of neighbors as a function of time
 - The Probability Density Function (PDF) of the time a given link stays active
 
-   ![Example graph](simulation/images/graph1.png)
+   ![Example graph](images/graph1.png)
 
 ## Parameters
 

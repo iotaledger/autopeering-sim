@@ -1,9 +1,12 @@
-package main
+package simulation
 
 import (
 	"fmt"
 	"os"
 	"sort"
+
+	"github.com/iotaledger/autopeering-sim/simulation/config"
+	"github.com/iotaledger/goshimmer/packages/autopeering/peer"
 )
 
 func createDirIfNotExist(dir string) {
@@ -15,7 +18,8 @@ func createDirIfNotExist(dir string) {
 	}
 }
 
-func linksToString(links map[int64]int) (output [][]string) {
+func LinksToString(linkList []Link) (output [][]string) {
+	links := linkSurvival(linkList)
 	keys := make([]int, len(links))
 	i := 0
 	total := 0
@@ -35,7 +39,8 @@ func linksToString(links map[int64]int) (output [][]string) {
 	return output
 }
 
-func convergenceToString(c []Convergence) (output [][]string) {
+func ConvergenceToString() (output [][]string) {
+	c := RecordConv.convergence
 	for _, line := range c {
 		record := []string{
 			fmt.Sprintf("%v", line.timestamp.Seconds()),
@@ -47,17 +52,14 @@ func convergenceToString(c []Convergence) (output [][]string) {
 	return output
 }
 
-func messagesToString(status *StatusMap) (output [][]string) {
+func MessagesToString(nodeMap map[peer.ID]Node, status *StatusMap) (output [][]string) {
 	avgResult := StatusSum{}
 
 	//fmt.Printf("\nID\tOUT\tACC\tREJ\tIN\tDROP\n")
-	for _, peer := range allPeers {
-		neighborhoods[peer.ID()] = protocolMap[peer.ID()].GetNeighbors()
-
-		summary := status.GetSummary(idMap[peer.ID()])
-
+	for id := range nodeMap {
+		summary := status.GetSummary(id)
 		record := []string{
-			fmt.Sprintf("%v", idMap[peer.ID()]),
+			fmt.Sprintf("%v", id),
 			fmt.Sprintf("%v", summary.outbound),
 			fmt.Sprintf("%v", summary.accepted),
 			fmt.Sprintf("%v", summary.rejected),
@@ -75,6 +77,7 @@ func messagesToString(status *StatusMap) (output [][]string) {
 
 	}
 
+	N := config.NumberNodes()
 	record := []string{
 		fmt.Sprintf("%v", "Avg"),
 		fmt.Sprintf("%v", float64(avgResult.outbound)/float64(N)),

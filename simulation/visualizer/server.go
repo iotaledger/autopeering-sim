@@ -1,6 +1,7 @@
 package visualizer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,8 +14,8 @@ import (
 )
 
 type Server struct {
-	router *mux.Router
-	Start  chan struct{}
+	srv   *http.Server
+	Start chan struct{}
 }
 
 type Event struct {
@@ -24,10 +25,10 @@ type Event struct {
 }
 
 var (
-	clients    = make(map[*websocket.Conn]bool)
-	wsChan     = make(chan *websocket.Conn, 1)
-	Visualizer = make(chan *Event, 100000)
-	upgrader   = websocket.Upgrader{
+	clients   = make(map[*websocket.Conn]bool)
+	wsChan    = make(chan *websocket.Conn, 1)
+	eventChan = make(chan *Event, 100000)
+	upgrader  = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
@@ -35,13 +36,17 @@ var (
 )
 
 func NewServer() *Server {
-	s := &Server{}
-	s.Start = make(chan struct{})
-	s.router = mux.NewRouter()
-	s.router.HandleFunc("/start", func(w http.ResponseWriter, r *http.Request) { s.Start <- struct{}{} }).Methods("GET")
-	s.router.HandleFunc("/event", eventHandler).Methods("POST")
-	s.router.HandleFunc("/ws", wsHandler)
-	s.router.PathPrefix("/").Handler(http.FileServer(rice.MustFindBox("frontend").HTTPBox()))
+	s := &Server{
+		Start: make(chan struct{}, 1),
+	}
+
+	router := mux.NewRouter()
+	router.HandleFunc("/start", func(w http.ResponseWriter, r *http.Request) { s.Start <- struct{}{} }).Methods("GET")
+	router.HandleFunc("/event", eventHandler).Methods("POST")
+	router.HandleFunc("/ws", wsHandler)
+	router.PathPrefix("/").Handler(http.FileServer(rice.MustFindBox("frontend").HTTPBox()))
+
+	s.srv = &http.Server{Addr: ":8844", Handler: router}
 
 	return s
 }
@@ -49,11 +54,20 @@ func NewServer() *Server {
 func (s *Server) Run() {
 	go echo()
 
-	log.Fatal(http.ListenAndServe(":8844", s.router))
+	if err := s.srv.ListenAndServe(); err != http.ErrServerClosed {
+		log.Fatalf("ListenAndServe(): %v", err)
+	}
+}
+
+func (s *Server) Close() {
+	close(eventChan)
+	if err := s.srv.Shutdown(context.TODO()); err != nil {
+		panic(err)
+	}
 }
 
 func Writer(event *Event) {
-	Visualizer <- event
+	eventChan <- event
 }
 
 func eventHandler(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +92,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func echo() {
-	for val := range Visualizer {
+	for val := range eventChan {
 		if val.Type <= removeLink {
 			time.Sleep(50 * time.Millisecond)
 		}
