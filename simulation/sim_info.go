@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iotaledger/hive.go/autopeering/peer"
+	"github.com/iotaledger/hive.go/identity"
 )
 
 const (
@@ -21,7 +21,7 @@ var RecordConv = NewConvergenceList()
 type Status struct {
 	timestamp int64
 	opType    byte
-	toNode    peer.ID
+	toNode    identity.ID
 }
 
 type StatusSum struct {
@@ -33,7 +33,7 @@ type StatusSum struct {
 }
 
 type Link struct {
-	x, y         peer.ID
+	x, y         identity.ID
 	tEstablished int64
 	tDropped     int64
 }
@@ -51,7 +51,7 @@ type ConvergenceList struct {
 
 type StatusMap struct {
 	sync.Mutex
-	status map[peer.ID][]Status
+	status map[identity.ID][]Status
 }
 
 func NewConvergenceList() *ConvergenceList {
@@ -88,11 +88,11 @@ func (c *ConvergenceList) GetAvgNeighbors() float64 {
 
 func NewStatusMap() *StatusMap {
 	return &StatusMap{
-		status: make(map[peer.ID][]Status),
+		status: make(map[identity.ID][]Status),
 	}
 }
 
-func (s *StatusMap) Append(from, to peer.ID, op byte) {
+func (s *StatusMap) Append(from, to identity.ID, op byte) {
 	s.Lock()
 	defer s.Unlock()
 	st := Status{
@@ -103,7 +103,7 @@ func (s *StatusMap) Append(from, to peer.ID, op byte) {
 	s.status[from] = append(s.status[from], st)
 }
 
-func (s *StatusMap) GetSummary(id peer.ID) (cnt StatusSum) {
+func (s *StatusMap) GetSummary(id identity.ID) (cnt StatusSum) {
 	s.Lock()
 	defer s.Unlock()
 	for _, t := range s.status[id] {
@@ -123,7 +123,7 @@ func (s *StatusMap) GetSummary(id peer.ID) (cnt StatusSum) {
 	return cnt
 }
 
-func NewLink(x, y peer.ID, timestamp int64) Link {
+func NewLink(x, y identity.ID, timestamp int64) Link {
 	return Link{
 		x:            x,
 		y:            y,
@@ -131,7 +131,7 @@ func NewLink(x, y peer.ID, timestamp int64) Link {
 	}
 }
 
-func DropLink(x, y peer.ID, timestamp int64, list []Link) bool {
+func DropLink(x, y identity.ID, timestamp int64, list []Link) bool {
 	for i := len(list) - 1; i >= 0; i-- {
 		if (list[i].x == x && list[i].y == y) ||
 			(list[i].x == y && list[i].y == x) {

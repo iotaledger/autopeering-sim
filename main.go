@@ -1,25 +1,26 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
+	"net"
 	"sync"
 	"time"
 
 	"github.com/iotaledger/autopeering-sim/simulation"
 	"github.com/iotaledger/autopeering-sim/simulation/config"
+	"github.com/iotaledger/autopeering-sim/simulation/transport"
 	"github.com/iotaledger/autopeering-sim/simulation/visualizer"
 	"github.com/iotaledger/hive.go/autopeering/peer"
 	"github.com/iotaledger/hive.go/autopeering/selection"
-	"github.com/iotaledger/hive.go/autopeering/transport"
 	"github.com/iotaledger/hive.go/events"
+	"github.com/iotaledger/hive.go/identity"
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/spf13/viper"
 )
 
 var (
-	nodeMap map[peer.ID]simulation.Node
+	nodeMap map[identity.ID]simulation.Node
 
 	srv     *visualizer.Server
 	closing chan struct{}
@@ -29,11 +30,11 @@ var (
 // dummyDiscovery is a dummy implementation of DiscoveryProtocol never returning any verified peers.
 type dummyDiscovery struct{}
 
-func (d dummyDiscovery) IsVerified(peer.ID, string) bool       { return true }
-func (d dummyDiscovery) EnsureVerified(*peer.Peer) error       { return nil }
-func (d dummyDiscovery) SendPing(string, peer.ID) <-chan error { panic("not implemented") }
-func (d dummyDiscovery) GetVerifiedPeer(id peer.ID) *peer.Peer { return nodeMap[id].Peer() }
-func (d dummyDiscovery) GetVerifiedPeers() []*peer.Peer        { return getAllPeers() }
+func (d dummyDiscovery) IsVerified(identity.ID, net.IP) bool       { return true }
+func (d dummyDiscovery) EnsureVerified(*peer.Peer) error           { return nil }
+func (d dummyDiscovery) SendPing(string, identity.ID) <-chan error { panic("not implemented") }
+func (d dummyDiscovery) GetVerifiedPeer(id identity.ID) *peer.Peer { return nodeMap[id].Peer() }
+func (d dummyDiscovery) GetVerifiedPeers() []*peer.Peer            { return getAllPeers() }
 
 var discover = &dummyDiscovery{}
 
@@ -45,7 +46,7 @@ func getAllPeers() []*peer.Peer {
 	return result
 }
 
-func RunSim() {
+func runSim() {
 	log.Println("Run simulation with the following parameters:")
 	config.PrintConfig()
 
@@ -62,18 +63,14 @@ func RunSim() {
 	selection.Events.OutgoingPeering.Attach(closure)
 	defer selection.Events.OutgoingPeering.Detach(closure)
 
-	network := transport.NewNetwork()
-	defer network.Close()
-
 	//lambda := (float64(N) / SaltLifetime.Seconds()) * 10
 	initialSalt := 0.
 
 	log.Println("Creating peers ...")
-	nodeMap = make(map[peer.ID]simulation.Node, config.NumberNodes())
+	netw := transport.NewNetwork()
+	nodeMap = make(map[identity.ID]simulation.Node, config.NumberNodes())
 	for i := 0; i < config.NumberNodes(); i++ {
-		name := fmt.Sprintf("%d", i)
-
-		node := simulation.NewNode(name, time.Duration(initialSalt)*time.Second, network, config.DropOnUpdate(), discover)
+		node := simulation.NewNode(transport.PeerID(i), time.Duration(initialSalt)*time.Second, netw, config.DropOnUpdate(), discover)
 		nodeMap[node.ID()] = node
 
 		if config.VisEnabled() {
@@ -146,7 +143,7 @@ func main() {
 	if config.VisEnabled() {
 		startServer()
 	}
-	RunSim()
+	runSim()
 }
 
 func startServer() {

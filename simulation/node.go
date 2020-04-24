@@ -1,15 +1,18 @@
 package simulation
 
 import (
+	"fmt"
+	"net"
 	"time"
 
+	"github.com/iotaledger/autopeering-sim/simulation/transport"
 	"github.com/iotaledger/hive.go/autopeering/peer"
 	"github.com/iotaledger/hive.go/autopeering/peer/service"
 	"github.com/iotaledger/hive.go/autopeering/salt"
 	"github.com/iotaledger/hive.go/autopeering/selection"
 	"github.com/iotaledger/hive.go/autopeering/server"
-	"github.com/iotaledger/hive.go/autopeering/transport"
 	"github.com/iotaledger/hive.go/database/mapdb"
+	"github.com/iotaledger/hive.go/identity"
 	"github.com/iotaledger/hive.go/logger"
 )
 
@@ -21,16 +24,16 @@ type Node struct {
 	Stop  func()
 }
 
-func NewNode(name string, saltLifetime time.Duration, network *transport.ChanNetwork, dropOnUpdate bool, discover selection.DiscoverProtocol) Node {
-	log := logger.NewLogger(name)
+func NewNode(id transport.PeerID, saltLifetime time.Duration, network *transport.Network, dropOnUpdate bool, discover selection.DiscoverProtocol) Node {
+	log := logger.NewLogger(fmt.Sprintf("peer%d", id))
 
-	network.AddTransport(name)
-	trans := network.GetTransport(name)
+	conn, _ := network.Listen(id, 0)
+
 	services := service.New()
-	services.Update(service.PeeringKey, trans.LocalAddr().Network(), trans.LocalAddr().String())
+	services.Update(service.PeeringKey, conn.LocalAddr().String(), 0)
 	db, _ := peer.NewDB(mapdb.NewMapDB())
 
-	local, _ := peer.NewLocal(services, db)
+	local, _ := peer.NewLocal(conn.LocalAddr().(*net.UDPAddr).IP, services, db)
 
 	s, _ := salt.NewSalt(saltLifetime)
 	local.SetPrivateSalt(s)
@@ -38,7 +41,7 @@ func NewNode(name string, saltLifetime time.Duration, network *transport.ChanNet
 	local.SetPublicSalt(s)
 
 	prot := selection.New(local, discover, selection.Logger(log), selection.DropOnUpdate(dropOnUpdate))
-	srv := server.Serve(local, network.GetTransport(name), log, prot)
+	srv := server.Serve(local, conn, log, prot)
 
 	return Node{
 		local: local,
@@ -49,17 +52,17 @@ func NewNode(name string, saltLifetime time.Duration, network *transport.ChanNet
 		Stop: func() {
 			prot.Close()
 			srv.Close()
-			trans.Close()
+			conn.Close()
 		},
 	}
 }
 
-func (n Node) ID() peer.ID {
+func (n Node) ID() identity.ID {
 	return n.local.ID()
 }
 
 func (n Node) Peer() *peer.Peer {
-	return &n.local.Peer
+	return n.local.Peer
 }
 
 func (n Node) GetNeighbors() []*peer.Peer {

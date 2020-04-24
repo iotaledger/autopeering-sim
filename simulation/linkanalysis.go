@@ -6,13 +6,13 @@ import (
 
 	"github.com/iotaledger/autopeering-sim/simulation/config"
 	"github.com/iotaledger/autopeering-sim/simulation/visualizer"
-	"github.com/iotaledger/hive.go/autopeering/peer"
 	"github.com/iotaledger/hive.go/autopeering/selection"
 	"github.com/iotaledger/hive.go/events"
+	"github.com/iotaledger/hive.go/identity"
 )
 
 type linkAnalysis struct {
-	nodeMap map[peer.ID]Node
+	nodeMap map[identity.ID]Node
 
 	startTime    time.Time
 	incomingChan chan *selection.PeeringEvent
@@ -25,7 +25,7 @@ type linkAnalysis struct {
 	wg      sync.WaitGroup
 }
 
-func NewLinkAnalysis(nodeMap map[peer.ID]Node) *linkAnalysis {
+func NewLinkAnalysis(nodeMap map[identity.ID]Node) *linkAnalysis {
 	return &linkAnalysis{
 		nodeMap:      nodeMap,
 		incomingChan: make(chan *selection.PeeringEvent, 10),
