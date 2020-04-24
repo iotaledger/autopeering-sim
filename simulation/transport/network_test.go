@@ -40,7 +40,7 @@ func TestNetwork_ListenTwice(t *testing.T) {
 	defer a.Close()
 
 	_, err = network.Listen(peerA, 0)
-	assert.Truef(t, errors.Is(err, ErrOpen), "unexpected error: %v", err)
+	assert.Truef(t, errors.Is(err, ErrInUse), "unexpected error: %v", err)
 }
 
 func TestConn_Close(t *testing.T) {
@@ -122,7 +122,7 @@ func TestConn_WriteInvalid(t *testing.T) {
 	}
 	n, err := a.WriteToUDP(testPacket, addr)
 	assert.Equal(t, 0, n)
-	assert.Truef(t, errors.Is(err, ErrInvalidTarget), "unexpected error: %v", err)
+	assert.Truef(t, errors.Is(err, ErrInvalidDestination), "unexpected error: %v", err)
 }
 
 func TestConn_WriteClosed(t *testing.T) {

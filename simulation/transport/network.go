@@ -9,9 +9,9 @@ import (
 
 // Errors returned by the transport package
 var (
-	ErrClosed        = errors.New("use of closed network connection")
-	ErrOpen          = errors.New("connection already open")
-	ErrInvalidTarget = errors.New("invalid target address")
+	ErrClosed             = errors.New("use of closed network connection")
+	ErrInUse              = errors.New("address in use")
+	ErrInvalidDestination = errors.New("invalid destination")
 )
 
 // Network offers in-memory transfers between an arbitrary number of clients.
@@ -20,7 +20,7 @@ type Network struct {
 	connections map[string]*conn
 }
 
-// A PeerID specifies the ID of a peer to which we can connect.
+// A PeerID specifies the ID of a get to which we can connect.
 type PeerID = uint16
 
 type conn struct {
@@ -52,14 +52,14 @@ func NewNetwork() *Network {
 	}
 }
 
-// Listen announces that peer and port on the local transport address.
+// Listen announces that get and port on the local transport address.
 func (n *Network) Listen(id PeerID, port int) (*conn, error) {
 	n.Lock()
 	defer n.Unlock()
 
 	addr := &net.UDPAddr{IP: ipFromID(id), Port: port}
 	if _, contains := n.connections[addr.String()]; contains {
-		return nil, ErrOpen
+		return nil, ErrInUse
 	}
 
 	c := newConn(addr, n)
@@ -67,16 +67,17 @@ func (n *Network) Listen(id PeerID, port int) (*conn, error) {
 	return c, nil
 }
 
-func (n *Network) close(c *conn) {
+func (n *Network) remove(addr string) {
 	n.Lock()
 	defer n.Unlock()
 
-	delete(n.connections, c.addr.String())
+	delete(n.connections, addr)
 }
 
-func (n *Network) peer(addr string) *conn {
+func (n *Network) get(addr string) *conn {
 	n.RLock()
 	defer n.RUnlock()
+
 	return n.connections[addr]
 }
 
@@ -110,9 +111,9 @@ func (c *conn) ReadFromUDP(b []byte) (int, *net.UDPAddr, error) {
 // WriteTo implements the Transport WriteTo method.
 func (c *conn) WriteToUDP(b []byte, addr *net.UDPAddr) (int, error) {
 	// determine the receiving to
-	to := c.network.peer(addr.String())
+	to := c.network.get(addr.String())
 	if to == nil {
-		return 0, ErrInvalidTarget
+		return 0, ErrInvalidDestination
 	}
 
 	// nothing to write
@@ -134,7 +135,7 @@ func (c *conn) WriteToUDP(b []byte, addr *net.UDPAddr) (int, error) {
 func (c *conn) Close() error {
 	c.closeOnce.Do(func() {
 		close(c.closing)
-		c.network.close(c)
+		c.network.remove(c.addr.String())
 	})
 	return nil
 }
