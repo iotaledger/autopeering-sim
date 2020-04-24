@@ -16,7 +16,7 @@ var (
 
 // Network offers in-memory transfers between an arbitrary number of clients.
 type Network struct {
-	sync.Mutex
+	sync.RWMutex
 	connections map[string]*conn
 }
 
@@ -32,23 +32,17 @@ type conn struct {
 		addr *net.UDPAddr
 	}
 
-	c         chan transfer
+	queue     chan packet
 	closeOnce sync.Once
 	closing   chan struct{}
 }
 
-type transfer struct {
-	pkt  []byte
+type packet struct {
+	data []byte
 	addr *net.UDPAddr
 }
 
-var (
-	queueSize = 1
-	ipNet     = net.IPNet{
-		IP:   net.IPv4(10, 0, 0, 0),
-		Mask: net.IPv4Mask(0, 0, 0xff, 0xff),
-	}
-)
+var queueSize = 1
 
 // NewNetwork creates a new in-memory transport transport.
 // For each provided address a corresponding client is created.
@@ -80,11 +74,17 @@ func (n *Network) close(c *conn) {
 	delete(n.connections, c.addr.String())
 }
 
+func (n *Network) peer(addr string) *conn {
+	n.RLock()
+	defer n.RUnlock()
+	return n.connections[addr]
+}
+
 func newConn(addr *net.UDPAddr, network *Network) *conn {
 	c := &conn{
 		addr:    addr,
 		network: network,
-		c:       make(chan transfer, queueSize),
+		queue:   make(chan packet, queueSize),
 		closing: make(chan struct{}),
 	}
 	// create empty buffer
@@ -95,11 +95,12 @@ func newConn(addr *net.UDPAddr, network *Network) *conn {
 // ReadFrom implements the Transport ReadFrom method.
 func (c *conn) ReadFromUDP(b []byte) (int, *net.UDPAddr, error) {
 	for {
+		// read from buffer
 		if c.buf.Len() > 0 {
 			n, err := c.buf.Read(b)
 			return n, c.buf.addr, err
 		}
-
+		// load from queue
 		if err := c.fillBuffer(); err != nil {
 			return 0, nil, err
 		}
@@ -107,23 +108,23 @@ func (c *conn) ReadFromUDP(b []byte) (int, *net.UDPAddr, error) {
 }
 
 // WriteTo implements the Transport WriteTo method.
-func (c *conn) WriteToUDP(pkt []byte, addr *net.UDPAddr) (int, error) {
-	// determine the receiving peer
-	peer, ok := c.network.connections[addr.String()]
-	if !ok {
+func (c *conn) WriteToUDP(b []byte, addr *net.UDPAddr) (int, error) {
+	// determine the receiving to
+	to := c.network.peer(addr.String())
+	if to == nil {
 		return 0, ErrInvalidTarget
 	}
 
 	// nothing to write
-	if len(pkt) == 0 {
+	if len(b) == 0 {
 		return 0, nil
 	}
-	// clone the packet before sending, just to make sure...
-	req := transfer{pkt: append([]byte{}, pkt...), addr: c.addr}
+	// copy the data before sending, just to make sure...
+	pkt := packet{data: append([]byte{}, b...), addr: c.addr}
 
 	select {
-	case peer.c <- req:
-		return len(pkt), nil
+	case to.queue <- pkt:
+		return len(b), nil
 	case <-c.closing:
 		return 0, ErrClosed
 	}
@@ -145,9 +146,9 @@ func (c *conn) LocalAddr() net.Addr {
 
 func (c *conn) fillBuffer() error {
 	select {
-	case res := <-c.c:
-		c.buf.Buffer = bytes.NewBuffer(res.pkt)
-		c.buf.addr = res.addr
+	case pkt := <-c.queue:
+		c.buf.Buffer = bytes.NewBuffer(pkt.data)
+		c.buf.addr = pkt.addr
 		return nil
 	case <-c.closing:
 		return ErrClosed
@@ -155,6 +156,6 @@ func (c *conn) fillBuffer() error {
 }
 
 func ipFromID(id uint16) net.IP {
-	nIP := ipNet.IP.To4()
-	return net.IPv4(nIP[0], nIP[1], byte(id>>8), byte(id))
+	// use 10.0.0.0/16 subnet
+	return net.IPv4(10, 0, byte(id>>8), byte(id))
 }
