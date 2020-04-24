@@ -3,11 +3,13 @@ package simulation
 import (
 	"time"
 
-	"github.com/iotaledger/goshimmer/packages/autopeering/peer"
-	"github.com/iotaledger/goshimmer/packages/autopeering/salt"
-	"github.com/iotaledger/goshimmer/packages/autopeering/selection"
-	"github.com/iotaledger/goshimmer/packages/autopeering/server"
-	"github.com/iotaledger/goshimmer/packages/autopeering/transport"
+	"github.com/iotaledger/hive.go/autopeering/peer"
+	"github.com/iotaledger/hive.go/autopeering/peer/service"
+	"github.com/iotaledger/hive.go/autopeering/salt"
+	"github.com/iotaledger/hive.go/autopeering/selection"
+	"github.com/iotaledger/hive.go/autopeering/server"
+	"github.com/iotaledger/hive.go/autopeering/transport"
+	"github.com/iotaledger/hive.go/database/mapdb"
 	"github.com/iotaledger/hive.go/logger"
 )
 
@@ -24,17 +26,19 @@ func NewNode(name string, saltLifetime time.Duration, network *transport.ChanNet
 
 	network.AddTransport(name)
 	trans := network.GetTransport(name)
-	db := peer.NewMemoryDB(log)
-	local, _ := peer.NewLocal(trans.LocalAddr().Network(), trans.LocalAddr().String(), db)
+	services := service.New()
+	services.Update(service.PeeringKey, trans.LocalAddr().Network(), trans.LocalAddr().String())
+	db, _ := peer.NewDB(mapdb.NewMapDB())
+
+	local, _ := peer.NewLocal(services, db)
 
 	s, _ := salt.NewSalt(saltLifetime)
 	local.SetPrivateSalt(s)
 	s, _ = salt.NewSalt(saltLifetime)
 	local.SetPublicSalt(s)
 
-	cfg := selection.Config{Log: log, DropOnUpdate: dropOnUpdate}
-	prot := selection.New(local, discover, cfg)
-	srv := server.Listen(local, network.GetTransport(name), log, prot)
+	prot := selection.New(local, discover, selection.Logger(log), selection.DropOnUpdate(dropOnUpdate))
+	srv := server.Serve(local, network.GetTransport(name), log, prot)
 
 	return Node{
 		local: local,
@@ -46,7 +50,6 @@ func NewNode(name string, saltLifetime time.Duration, network *transport.ChanNet
 			prot.Close()
 			srv.Close()
 			trans.Close()
-			db.Close()
 		},
 	}
 }

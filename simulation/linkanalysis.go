@@ -6,8 +6,8 @@ import (
 
 	"github.com/iotaledger/autopeering-sim/simulation/config"
 	"github.com/iotaledger/autopeering-sim/simulation/visualizer"
-	"github.com/iotaledger/goshimmer/packages/autopeering/peer"
-	"github.com/iotaledger/goshimmer/packages/autopeering/selection"
+	"github.com/iotaledger/hive.go/autopeering/peer"
+	"github.com/iotaledger/hive.go/autopeering/selection"
 	"github.com/iotaledger/hive.go/events"
 )
 

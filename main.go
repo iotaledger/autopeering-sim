@@ -10,9 +10,9 @@ import (
 	"github.com/iotaledger/autopeering-sim/simulation"
 	"github.com/iotaledger/autopeering-sim/simulation/config"
 	"github.com/iotaledger/autopeering-sim/simulation/visualizer"
-	"github.com/iotaledger/goshimmer/packages/autopeering/peer"
-	"github.com/iotaledger/goshimmer/packages/autopeering/selection"
-	"github.com/iotaledger/goshimmer/packages/autopeering/transport"
+	"github.com/iotaledger/hive.go/autopeering/peer"
+	"github.com/iotaledger/hive.go/autopeering/selection"
+	"github.com/iotaledger/hive.go/autopeering/transport"
 	"github.com/iotaledger/hive.go/events"
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/spf13/viper"
@@ -29,10 +29,11 @@ var (
 // dummyDiscovery is a dummy implementation of DiscoveryProtocol never returning any verified peers.
 type dummyDiscovery struct{}
 
-func (d dummyDiscovery) IsVerified(peer.ID, string) bool                 { return true }
-func (d dummyDiscovery) EnsureVerified(*peer.Peer)                       {}
-func (d dummyDiscovery) GetVerifiedPeer(id peer.ID, _ string) *peer.Peer { return nodeMap[id].Peer() }
-func (d dummyDiscovery) GetVerifiedPeers() []*peer.Peer                  { return getAllPeers() }
+func (d dummyDiscovery) IsVerified(peer.ID, string) bool       { return true }
+func (d dummyDiscovery) EnsureVerified(*peer.Peer) error       { return nil }
+func (d dummyDiscovery) SendPing(string, peer.ID) <-chan error { panic("not implemented") }
+func (d dummyDiscovery) GetVerifiedPeer(id peer.ID) *peer.Peer { return nodeMap[id].Peer() }
+func (d dummyDiscovery) GetVerifiedPeers() []*peer.Peer        { return getAllPeers() }
 
 var discover = &dummyDiscovery{}
 

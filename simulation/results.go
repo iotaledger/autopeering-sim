@@ -6,7 +6,7 @@ import (
 	"sort"
 
 	"github.com/iotaledger/autopeering-sim/simulation/config"
-	"github.com/iotaledger/goshimmer/packages/autopeering/peer"
+	"github.com/iotaledger/hive.go/autopeering/peer"
 )
 
 func createDirIfNotExist(dir string) {

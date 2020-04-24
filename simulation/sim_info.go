@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iotaledger/goshimmer/packages/autopeering/peer"
+	"github.com/iotaledger/hive.go/autopeering/peer"
 )
 
 const (
