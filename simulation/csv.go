@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/iotaledger/goshimmer/packages/autopeering/peer"
+	"github.com/iotaledger/hive.go/identity"
 )
 
 func initCSV(records [][]string, filename string) error {
@@ -52,7 +52,7 @@ func WriteCSV(records [][]string, filename string, header ...[]string) error {
 	return err
 }
 
-func WriteAdjlist(nodeMap map[peer.ID]Node, filename string) error {
+func WriteAdjlist(nodeMap map[identity.ID]Node, filename string) error {
 	const separator = ' '
 
 	f, err := os.Create("data/result_" + filename + ".txt")

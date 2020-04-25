@@ -6,7 +6,7 @@ import (
 	"sort"
 
 	"github.com/iotaledger/autopeering-sim/simulation/config"
-	"github.com/iotaledger/goshimmer/packages/autopeering/peer"
+	"github.com/iotaledger/hive.go/identity"
 )
 
 func createDirIfNotExist(dir string) {
@@ -52,7 +52,7 @@ func ConvergenceToString() (output [][]string) {
 	return output
 }
 
-func MessagesToString(nodeMap map[peer.ID]Node, status *StatusMap) (output [][]string) {
+func MessagesToString(nodeMap map[identity.ID]Node, status *StatusMap) (output [][]string) {
 	avgResult := StatusSum{}
 
 	//fmt.Printf("\nID\tOUT\tACC\tREJ\tIN\tDROP\n")
