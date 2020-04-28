@@ -40,7 +40,14 @@ func NewNode(id transport.PeerID, saltLifetime time.Duration, network *transport
 	s, _ = salt.NewSalt(saltLifetime)
 	local.SetPublicSalt(s)
 
-	prot := selection.New(local, discover, selection.Logger(log), selection.DropOnUpdate(dropOnUpdate))
+	prot := selection.New(local,
+		discover,
+		selection.Logger(log),
+		selection.DropOnUpdate(dropOnUpdate),
+		selection.UseMana(false),
+		selection.R(2),
+		selection.Ro(2.),
+	)
 	srv := server.Serve(local, conn, log, prot)
 
 	return Node{

@@ -2,6 +2,8 @@ module github.com/iotaledger/autopeering-sim
 
 go 1.14
 
+replace github.com/iotaledger/hive.go => /Users/angelo/dev/iota/hive.go
+
 require (
 	github.com/GeertJohan/go.rice v1.0.0
 	github.com/gorilla/mux v1.7.4
