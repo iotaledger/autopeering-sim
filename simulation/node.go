@@ -24,7 +24,7 @@ type Node struct {
 	Stop  func()
 }
 
-func NewNode(id transport.PeerID, saltLifetime time.Duration, network *transport.Network, dropOnUpdate bool, discover selection.DiscoverProtocol) Node {
+func NewNode(id transport.PeerID, saltLifetime time.Duration, network *transport.Network, dropOnUpdate bool, discover selection.DiscoverProtocol, r int, ro float64) Node {
 	log := logger.NewLogger(fmt.Sprintf("peer%d", id))
 
 	conn, _ := network.Listen(id, 0)
@@ -44,9 +44,10 @@ func NewNode(id transport.PeerID, saltLifetime time.Duration, network *transport
 		discover,
 		selection.Logger(log),
 		selection.DropOnUpdate(dropOnUpdate),
-		selection.UseMana(false),
-		selection.R(2),
-		selection.Ro(2.),
+		selection.UseMana(true),
+		selection.ManaFunc(manaF.Eval),
+		selection.R(r),
+		selection.Ro(ro),
 	)
 	srv := server.Serve(local, conn, log, prot)
 

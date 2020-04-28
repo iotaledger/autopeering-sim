@@ -3,5 +3,7 @@
   "Duration": 100,
   "SaltLifetime": 3600,
   "VisualEnabled": true,
-  "DropOnUpdate": false
+  "DropOnUpdate": false,
+  "R" : 10,
+  "Ro" : 2
 }

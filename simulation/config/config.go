@@ -16,6 +16,8 @@ const (
 	saltLifetime = "SaltLifetime"
 	vEnabled     = "VisualEnabled"
 	dropOnUpdate = "DropOnUpdate"
+	r            = "R"
+	ro           = "Ro"
 )
 
 func init() {
@@ -24,6 +26,8 @@ func init() {
 	viper.SetDefault(saltLifetime, 60*60)
 	viper.SetDefault(vEnabled, false)
 	viper.SetDefault(dropOnUpdate, false)
+	viper.SetDefault(r, 10)
+	viper.SetDefault(ro, 2.)
 }
 
 func Load() {
@@ -64,4 +68,12 @@ func DropOnUpdate() bool {
 
 func VisEnabled() bool {
 	return viper.GetBool(vEnabled)
+}
+
+func R() int {
+	return viper.GetInt(r)
+}
+
+func Ro() float64 {
+	return viper.GetFloat64(ro)
 }

@@ -69,8 +69,17 @@ func runSim() {
 	log.Println("Creating peers ...")
 	netw := transport.NewNetwork()
 	nodeMap = make(map[identity.ID]simulation.Node, config.NumberNodes())
+
 	for i := 0; i < config.NumberNodes(); i++ {
-		node := simulation.NewNode(transport.PeerID(i), time.Duration(initialSalt)*time.Second, netw, config.DropOnUpdate(), discover)
+		node := simulation.NewNode(
+			transport.PeerID(i),
+			time.Duration(initialSalt)*time.Second,
+			netw,
+			config.DropOnUpdate(),
+			discover,
+			config.R(),
+			config.Ro(),
+		)
 		nodeMap[node.ID()] = node
 
 		if config.VisEnabled() {
@@ -82,6 +91,16 @@ func runSim() {
 		initialSalt = rand.Float64() * config.SaltLifetime().Seconds() // random
 	}
 	log.Println("Creating peers ... done")
+
+	log.Println("Populating mana ...")
+
+	identities := []*identity.Identity{}
+	for _, node := range nodeMap {
+		identities = append(identities, node.Peer().Identity)
+	}
+	simulation.IdentityMana = simulation.NewZipfMana(identities, 0.82)
+
+	log.Println("Populating mana ... done")
 
 	analysis := simulation.NewLinkAnalysis(nodeMap)
 
