@@ -9,6 +9,7 @@ const (
 	removeLink
 	updateConvergence
 	updateAvgNeighbors
+	setNode
 )
 
 func AddNode(id string) {
@@ -16,6 +17,15 @@ func AddNode(id string) {
 		Type:   addNode,
 		Source: id,
 		Dest:   "",
+	}
+	Writer(event)
+}
+
+func SetColor(id string, color string) {
+	event := &Event{
+		Type:   setNode,
+		Source: id,
+		Dest:   color,
 	}
 	Writer(event)
 }

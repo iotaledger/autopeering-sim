@@ -16,8 +16,10 @@ const (
 	saltLifetime = "SaltLifetime"
 	vEnabled     = "VisualEnabled"
 	dropOnUpdate = "DropOnUpdate"
+	mana         = "mana"
 	r            = "R"
 	ro           = "Ro"
+	zipf         = "zipf"
 )
 
 func init() {
@@ -26,8 +28,10 @@ func init() {
 	viper.SetDefault(saltLifetime, 60*60)
 	viper.SetDefault(vEnabled, false)
 	viper.SetDefault(dropOnUpdate, false)
+	viper.SetDefault(mana, false)
 	viper.SetDefault(r, 10)
 	viper.SetDefault(ro, 2.)
+	viper.SetDefault(zipf, 1.)
 }
 
 func Load() {
@@ -70,10 +74,18 @@ func VisEnabled() bool {
 	return viper.GetBool(vEnabled)
 }
 
+func Mana() bool {
+	return viper.GetBool(mana)
+}
+
 func R() int {
 	return viper.GetInt(r)
 }
 
 func Ro() float64 {
 	return viper.GetFloat64(ro)
+}
+
+func Zipf() float64 {
+	return viper.GetFloat64(zipf)
 }

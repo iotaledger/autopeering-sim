@@ -4,6 +4,8 @@
   "SaltLifetime": 3600,
   "VisualEnabled": true,
   "DropOnUpdate": false,
+  "mana": true,
   "R" : 10,
-  "Ro" : 2
+  "Ro" : 2,
+  "zipf": 1
 }

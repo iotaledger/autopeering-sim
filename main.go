@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"net"
 	"sync"
 	"time"
 
+	"github.com/iotaledger/autopeering-sim/graph"
 	"github.com/iotaledger/autopeering-sim/simulation"
 	"github.com/iotaledger/autopeering-sim/simulation/config"
 	"github.com/iotaledger/autopeering-sim/simulation/transport"
@@ -77,6 +79,7 @@ func runSim() {
 			netw,
 			config.DropOnUpdate(),
 			discover,
+			config.Mana(),
 			config.R(),
 			config.Ro(),
 		)
@@ -98,7 +101,16 @@ func runSim() {
 	for _, node := range nodeMap {
 		identities = append(identities, node.Peer().Identity)
 	}
-	simulation.IdentityMana = simulation.NewZipfMana(identities, 0.82)
+	simulation.IdentityMana = simulation.NewZipfMana(identities, config.Zipf())
+	for _, identity := range identities {
+		if config.VisEnabled() {
+			c := "0x666666"
+			if config.Mana() {
+				c = color(simulation.IdentityMana[identity], simulation.IdentityMana[identities[0]], simulation.IdentityMana[identities[len(identities)-1]])
+			}
+			visualizer.SetColor(identity.ID().String(), c)
+		}
+	}
 
 	log.Println("Populating mana ... done")
 
@@ -152,6 +164,15 @@ func runSim() {
 	if err != nil {
 		log.Fatalln("error writing adjlist:", err)
 	}
+
+	g := graph.New(identities)
+	for _, identity := range identities {
+		neighbors := nodeMap[identity.ID()].GetNeighbors()
+		for _, neighbor := range neighbors {
+			g.AddEdge(identity.ID().String(), neighbor.Identity.ID().String())
+		}
+	}
+	log.Println("Diameter: ", g.Diameter())
 }
 
 func main() {
@@ -202,4 +223,11 @@ func statVisualizer() {
 			}
 		}
 	}()
+}
+
+func color(target, max, min uint64) string {
+	base := "0x1100"
+	//max-min : 255 = target-min : x
+	v := (target - min) * 255 / (max - min)
+	return base + fmt.Sprintf("%x", v)
 }

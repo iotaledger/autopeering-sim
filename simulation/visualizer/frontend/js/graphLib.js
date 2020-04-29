@@ -57,6 +57,8 @@ function onLoad() {
 
     var nodeColor = 0x666666,			
         nodeSize = 14;
+    
+    var nodeColorMap = {};
 
     graphics.node(function (node) {
         return new WebglCircle(nodeSize, nodeColor);
@@ -210,6 +212,10 @@ function onLoad() {
             case "6":
                 document.getElementById("avgNeighbors").innerHTML = "Avg # of neighbors: " + eventArr[1];
                 break;
+            case "7":
+                colorNode(eventArr[1], eventArr[2]);
+                console.log(eventArr);
+                break;
         }
     }
 
@@ -239,6 +245,14 @@ function onLoad() {
 
     function myStopFunction() {
         clearInterval(myVar);
+    }
+
+    function colorNode(idA, c) {
+        var nodeUI = graphics.getNodeUI(idA);
+        nodeColorMap[idA] = c
+            if (nodeUI != null) {
+                nodeUI.color = c//"0x333333";  
+            }
     }
     
     function addNode(idA) {
@@ -291,11 +305,11 @@ function onLoad() {
                 linkUI.color = colorl;
                 nodeUI = graphics.getNodeUI(idA);
                 //if (nodeUI != null) {
-                    nodeUI.color = "0x666666";  
+                    nodeUI.color = nodeColorMap[idA];//"0x666666";  
                 //}
                 nodeUI = graphics.getNodeUI(idB);
                 if (nodeUI != null) {
-                    nodeUI.color = "0x666666";
+                    nodeUI.color = nodeColorMap[idB];//"0x666666";
                 }
             }
 
@@ -333,11 +347,11 @@ function onLoad() {
             await sleep(100);
             nodeUI = graphics.getNodeUI(idA);
             if (nodeUI != null) {
-                nodeUI.color = "0x666666";  
+                nodeUI.color = nodeColorMap[idA];//"0x666666";  
             }
             nodeUI = graphics.getNodeUI(idB);
             if (nodeUI != null) {
-                nodeUI.color = "0x666666";
+                nodeUI.color = nodeColorMap[idB];//"0x666666";
             }
 
             graph.removeLink(conn);
@@ -397,7 +411,7 @@ function onLoad() {
 
             var nodeUI = graphics.getNodeUI(node.id);
             if (nodeUI != null) {
-                nodeUI.color = "0x666666";
+                nodeUI.color = nodeColorMap[node.id];//"0x666666";
             }
 
         });
@@ -420,7 +434,7 @@ function onLoad() {
 
             var nodeUI = graphics.getNodeUI(nodeid);
             if (nodeUI != null) {
-                nodeUI.color = "0x666666";
+                nodeUI.color = nodeColorMap[nodeid];//"0x666666";
             } else {
 
             }
