@@ -13,6 +13,7 @@ import (
 const (
 	numberNodes          = "NumberNodes"
 	duration             = "Duration"
+	runs                 = "Runs"
 	saltLifetime         = "SaltLifetime"
 	vEnabled             = "VisualEnabled"
 	dropOnUpdate         = "DropOnUpdate"
@@ -27,6 +28,7 @@ const (
 func init() {
 	viper.SetDefault(numberNodes, 100)
 	viper.SetDefault(duration, 60)
+	viper.SetDefault(runs, 1)
 	viper.SetDefault(saltLifetime, 60*60)
 	viper.SetDefault(vEnabled, false)
 	viper.SetDefault(dropOnUpdate, false)
@@ -64,6 +66,10 @@ func NumberNodes() int {
 
 func Duration() time.Duration {
 	return time.Duration(viper.GetInt(duration)) * time.Second
+}
+
+func Runs() int {
+	return viper.GetInt(runs)
 }
 
 func SaltLifetime() time.Duration {

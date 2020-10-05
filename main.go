@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -27,6 +28,8 @@ var (
 	srv     *visualizer.Server
 	closing chan struct{}
 	wg      sync.WaitGroup
+
+	fileMutex sync.Mutex
 )
 
 // dummyDiscovery is a dummy implementation of DiscoveryProtocol never returning any verified peers.
@@ -48,7 +51,24 @@ func getAllPeers() []*peer.Peer {
 	return result
 }
 
+func appendToFile(f *os.File, s string) {
+	fileMutex.Lock()
+	defer fileMutex.Unlock()
+	f.WriteString(s)
+}
+
 func runSim() {
+
+	f, err := os.OpenFile("./data/peering-results.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+	defer appendToFile(f, fmt.Sprintf("%s END SIMULATION\n", time.Now().Format("2006/01/02 15:04:05.000000")))
+
+	appendToFile(f, fmt.Sprintf("%s BEGIN SIMULATION\n", time.Now().Format("2006/01/02 15:04:05.000000")))
+
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	log.Println("Run simulation with the following parameters:")
 	config.PrintConfig()
 
@@ -62,10 +82,18 @@ func runSim() {
 	closure := events.NewClosure(func(ev *selection.PeeringEvent) {
 		if ev.Status {
 			log.Printf("Peering: %s<->%s\n", ev.Self.String(), ev.Peer.ID())
+			appendToFile(f, fmt.Sprintf("%s Peering: %s<->%s\n", time.Now().Format("2006/01/02 15:04:05.000000"), ev.Self.String(), ev.Peer.ID()))
 		}
 	})
 	selection.Events.OutgoingPeering.Attach(closure)
 	defer selection.Events.OutgoingPeering.Detach(closure)
+
+	closure1 := events.NewClosure(func(ev *selection.DroppedEvent) {
+		log.Printf("Dropped: %s<->%s\n", ev.Self.String(), ev.DroppedID)
+		appendToFile(f, fmt.Sprintf("%s Dropped: %s<->%s\n", time.Now().Format("2006/01/02 15:04:05.000000"), ev.Self.String(), ev.DroppedID))
+	})
+	selection.Events.Dropped.Attach(closure1)
+	defer selection.Events.Dropped.Attach(closure1)
 
 	//lambda := (float64(N) / SaltLifetime.Seconds()) * 10
 	initialSalt := 0.
@@ -144,7 +172,7 @@ func runSim() {
 
 	// Start finalize simulation result
 	linkAnalysis := simulation.LinksToString(analysis.Links())
-	err := simulation.WriteCSV(linkAnalysis, "linkAnalysis", []string{"X", "Y"})
+	err = simulation.WriteCSV(linkAnalysis, "linkAnalysis", []string{"X", "Y"})
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
 	}
@@ -185,7 +213,9 @@ func main() {
 	if config.VisEnabled() {
 		startServer()
 	}
-	runSim()
+	for i := 0; i < config.Runs(); i++ {
+		runSim()
+	}
 }
 
 func startServer() {

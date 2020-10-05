@@ -1,8 +1,9 @@
 {
   "NumberNodes": 100,
-  "Duration": 100,
+  "Duration": 10,
+  "Runs": 2,
   "SaltLifetime": 3000,
-  "VisualEnabled": true,
+  "VisualEnabled": false,
   "DropOnUpdate": false,
   "InboundNeighborhood": 4,
   "OutboundNeighborhood": 4,
