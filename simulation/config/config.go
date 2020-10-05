@@ -11,15 +11,17 @@ import (
 
 // Config keys
 const (
-	numberNodes  = "NumberNodes"
-	duration     = "Duration"
-	saltLifetime = "SaltLifetime"
-	vEnabled     = "VisualEnabled"
-	dropOnUpdate = "DropOnUpdate"
-	mana         = "mana"
-	r            = "R"
-	ro           = "Ro"
-	zipf         = "zipf"
+	numberNodes          = "NumberNodes"
+	duration             = "Duration"
+	saltLifetime         = "SaltLifetime"
+	vEnabled             = "VisualEnabled"
+	dropOnUpdate         = "DropOnUpdate"
+	inboundNeighborhood  = "InboundNeighborhood"
+	outboundNeighborhood = "OutboundNeighborhood"
+	mana                 = "mana"
+	r                    = "R"
+	ro                   = "Ro"
+	zipf                 = "zipf"
 )
 
 func init() {
@@ -28,6 +30,8 @@ func init() {
 	viper.SetDefault(saltLifetime, 60*60)
 	viper.SetDefault(vEnabled, false)
 	viper.SetDefault(dropOnUpdate, false)
+	viper.SetDefault(inboundNeighborhood, 4)
+	viper.SetDefault(outboundNeighborhood, 4)
 	viper.SetDefault(mana, false)
 	viper.SetDefault(r, 10)
 	viper.SetDefault(ro, 2.)
@@ -68,6 +72,14 @@ func SaltLifetime() time.Duration {
 
 func DropOnUpdate() bool {
 	return viper.GetBool(dropOnUpdate)
+}
+
+func InboundNeighborhood() int {
+	return viper.GetInt(inboundNeighborhood)
+}
+
+func OutboundNeighborhood() int {
+	return viper.GetInt(outboundNeighborhood)
 }
 
 func VisEnabled() bool {

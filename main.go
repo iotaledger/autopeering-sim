@@ -53,6 +53,8 @@ func runSim() {
 	config.PrintConfig()
 
 	selection.SetParameters(selection.Parameters{
+		InboundNeighborSize:    config.InboundNeighborhood(),
+		OutboundNeighborSize:   config.OutboundNeighborhood(),
 		SaltLifetime:           config.SaltLifetime(),
 		OutboundUpdateInterval: 200 * time.Millisecond, // use exactly the same update time as previously
 	})
