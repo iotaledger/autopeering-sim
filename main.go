@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iotaledger/autopeering-sim/graph"
 	"github.com/iotaledger/autopeering-sim/simulation"
 	"github.com/iotaledger/autopeering-sim/simulation/config"
 	"github.com/iotaledger/autopeering-sim/simulation/transport"
@@ -57,7 +56,7 @@ func appendToFile(f *os.File, s string) {
 	f.WriteString(s)
 }
 
-func runSim() {
+func runSim(counter int) {
 
 	f, err := os.OpenFile("./data/peering-results.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -165,7 +164,7 @@ func runSim() {
 		node.Stop()
 	}
 	analysis.Stop()
-	if config.VisEnabled() {
+	if config.VisEnabled() && counter == 1 {
 		stopServer()
 	}
 	log.Println("Stopping peering ... done")
@@ -195,14 +194,14 @@ func runSim() {
 		log.Fatalln("error writing adjlist:", err)
 	}
 
-	g := graph.New(identities)
-	for _, identity := range identities {
-		neighbors := nodeMap[identity.ID()].GetNeighbors()
-		for _, neighbor := range neighbors {
-			g.AddEdge(identity.ID().String(), neighbor.Identity.ID().String())
-		}
-	}
-	log.Println("Diameter: ", g.Diameter())
+	// g := graph.New(identities)
+	// for _, identity := range identities {
+	// 	neighbors := nodeMap[identity.ID()].GetNeighbors()
+	// 	for _, neighbor := range neighbors {
+	// 		g.AddEdge(identity.ID().String(), neighbor.Identity.ID().String())
+	// 	}
+	// }
+	// log.Println("Diameter: ", g.Diameter())
 }
 
 func main() {
@@ -214,7 +213,7 @@ func main() {
 		startServer()
 	}
 	for i := 0; i < config.Runs(); i++ {
-		runSim()
+		runSim(config.Runs() - i)
 	}
 }
 
