@@ -56,16 +56,16 @@ func appendToFile(f *os.File, s string) {
 	f.WriteString(s)
 }
 
-func runSim(counter int) {
+func runSim(simCounter int) {
 
 	f, err := os.OpenFile("./data/peering-results.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
 	defer f.Close()
-	defer appendToFile(f, fmt.Sprintf("%s END SIMULATION\n", time.Now().Format("2006/01/02 15:04:05.000000")))
+	defer appendToFile(f, fmt.Sprintf("%s END SIMULATION #%d\n", time.Now().Format("2006/01/02 15:04:05.000000"), simCounter+1))
 
-	appendToFile(f, fmt.Sprintf("%s BEGIN SIMULATION\n", time.Now().Format("2006/01/02 15:04:05.000000")))
+	appendToFile(f, fmt.Sprintf("%s BEGIN SIMULATION #%d\n", time.Now().Format("2006/01/02 15:04:05.000000"), simCounter+1))
 
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	log.Println("Run simulation with the following parameters:")
@@ -132,6 +132,9 @@ func runSim(counter int) {
 	}
 	simulation.IdentityMana = simulation.NewZipfMana(identities, config.Zipf())
 	for _, identity := range identities {
+		if config.Mana() {
+			appendToFile(f, fmt.Sprintf("%s ID - mana: %s - %d\n", time.Now().Format("2006/01/02 15:04:05.000000"), identity.ID(), simulation.IdentityMana[identity]))
+		}
 		if config.VisEnabled() {
 			c := "0x666666"
 			if config.Mana() {
@@ -164,7 +167,7 @@ func runSim(counter int) {
 		node.Stop()
 	}
 	analysis.Stop()
-	if config.VisEnabled() && counter == 1 {
+	if config.VisEnabled() && config.Runs()-simCounter == 1 {
 		stopServer()
 	}
 	log.Println("Stopping peering ... done")
@@ -213,7 +216,7 @@ func main() {
 		startServer()
 	}
 	for i := 0; i < config.Runs(); i++ {
-		runSim(config.Runs() - i)
+		runSim(i)
 	}
 }
 
