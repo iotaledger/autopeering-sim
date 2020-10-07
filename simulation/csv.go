@@ -52,14 +52,8 @@ func WriteCSV(records [][]string, filename string, header ...[]string) error {
 	return err
 }
 
-func WriteAdjlist(nodeMap map[identity.ID]Node, filename string) error {
+func WriteAdjlist(nodeMap map[identity.ID]Node, f *os.File) error {
 	const separator = ' '
-
-	f, err := os.Create("data/result_" + filename + ".txt")
-	if err != nil {
-		return err
-	}
-	defer f.Close()
 
 	w := bufio.NewWriter(f)
 	for id, node := range nodeMap {

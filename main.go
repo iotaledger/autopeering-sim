@@ -58,12 +58,18 @@ func appendToFile(f *os.File, s string) {
 
 func runSim(simCounter int) {
 
-	f, err := os.OpenFile("./data/peering-results.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	f, err := os.OpenFile("data/peering-results.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
 	defer f.Close()
 	defer appendToFile(f, fmt.Sprintf("%s END SIMULATION #%d\n", time.Now().Format("2006/01/02 15:04:05.000000"), simCounter+1))
+
+	adjFile, err := os.OpenFile("data/result_adjlist.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer adjFile.Close()
 
 	appendToFile(f, fmt.Sprintf("%s BEGIN SIMULATION #%d\n", time.Now().Format("2006/01/02 15:04:05.000000"), simCounter+1))
 
@@ -192,7 +198,8 @@ func runSim(simCounter int) {
 		log.Fatalln("error writing csv:", err)
 	}
 
-	err = simulation.WriteAdjlist(nodeMap, "adjlist")
+	appendToFile(adjFile, fmt.Sprintf("### SIMULATION #%d\n", simCounter+1))
+	err = simulation.WriteAdjlist(nodeMap, adjFile)
 	if err != nil {
 		log.Fatalln("error writing adjlist:", err)
 	}
@@ -215,6 +222,17 @@ func main() {
 	if config.VisEnabled() {
 		startServer()
 	}
+
+	// reset previous simulation results
+	filenames := []string{"data/peering-results.txt", "data/result_adjlist.txt"}
+	for _, filename := range filenames {
+		f, err := os.Create(filename)
+		if err != nil {
+			log.Fatalf("error opening file: %v", err)
+		}
+		f.Close()
+	}
+
 	for i := 0; i < config.Runs(); i++ {
 		runSim(i)
 	}
