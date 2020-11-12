@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"math/rand"
@@ -56,30 +57,26 @@ func appendToFile(f *os.File, s string) {
 	f.WriteString(s)
 }
 
-func runSim(simCounter int) {
+func runSim(simCounter int, nuNodes int, nuNeighbors int, R int, Ro float64, Zipf float64) {
 
-	f, err := os.OpenFile("data/peering-results.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	filename := fmt.Sprint("./data/peering-results-", nuNodes, "-", nuNeighbors, "-", Zipf, "-", R, "-", Ro, "-", simCounter+1, ".txt")
+	//f, err := os.OpenFile("./data/peering-results.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	f, err := os.Create(filename)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
 	defer f.Close()
-	defer appendToFile(f, fmt.Sprintf("%s END SIMULATION #%d\n", time.Now().Format("2006/01/02 15:04:05.000000"), simCounter+1))
+	// defer appendToFile(f, fmt.Sprintf("%s END SIMULATION #%d\n", time.Now().Format("2006/01/02 15:04:05.000000"), simCounter+1))
 
-	adjFile, err := os.OpenFile("data/result_adjlist.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("error opening file: %v", err)
-	}
-	defer adjFile.Close()
-
-	appendToFile(f, fmt.Sprintf("%s BEGIN SIMULATION #%d\n", time.Now().Format("2006/01/02 15:04:05.000000"), simCounter+1))
+	//appendToFile(f, fmt.Sprintf("%s BEGIN SIMULATION #%d\n", time.Now().Format("2006/01/02 15:04:05.000000"), simCounter+1))
 
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	log.Println("Run simulation with the following parameters:")
 	config.PrintConfig()
 
 	selection.SetParameters(selection.Parameters{
-		InboundNeighborSize:    config.InboundNeighborhood(),
-		OutboundNeighborSize:   config.OutboundNeighborhood(),
+		InboundNeighborSize:    nuNeighbors,
+		OutboundNeighborSize:   nuNeighbors,
 		SaltLifetime:           config.SaltLifetime(),
 		OutboundUpdateInterval: 200 * time.Millisecond, // use exactly the same update time as previously
 	})
@@ -105,9 +102,9 @@ func runSim(simCounter int) {
 
 	log.Println("Creating peers ...")
 	netw := transport.NewNetwork()
-	nodeMap = make(map[identity.ID]simulation.Node, config.NumberNodes())
+	nodeMap = make(map[identity.ID]simulation.Node, nuNodes)
 
-	for i := 0; i < config.NumberNodes(); i++ {
+	for i := 0; i < nuNodes; i++ {
 		node := simulation.NewNode(
 			transport.PeerID(i),
 			time.Duration(initialSalt)*time.Second,
@@ -115,8 +112,8 @@ func runSim(simCounter int) {
 			config.DropOnUpdate(),
 			discover,
 			config.Mana(),
-			config.R(),
-			config.Ro(),
+			R,
+			Ro,
 		)
 		nodeMap[node.ID()] = node
 
@@ -136,10 +133,17 @@ func runSim(simCounter int) {
 	for _, node := range nodeMap {
 		identities = append(identities, node.Peer().Identity)
 	}
-	simulation.IdentityMana = simulation.NewZipfMana(identities, config.Zipf())
+	simulation.IdentityMana = simulation.NewZipfMana(identities, Zipf)
+	filenameMana := fmt.Sprint("./data/mana_list-", nuNodes, "-", nuNeighbors, "-", Zipf, "-", R, "-", Ro, "-", simCounter+1, ".txt")
+	fMana, err := os.Create(filenameMana)
+	defer fMana.Close()
 	for _, identity := range identities {
 		if config.Mana() {
-			appendToFile(f, fmt.Sprintf("%s ID - mana: %s - %d\n", time.Now().Format("2006/01/02 15:04:05.000000"), identity.ID(), simulation.IdentityMana[identity]))
+
+			if err != nil {
+				log.Fatalf("error opening file: %v", err)
+			}
+			appendToFile(fMana, fmt.Sprint(identity.ID(), simulation.IdentityMana[identity], "\n"))
 		}
 		if config.VisEnabled() {
 			c := "0x666666"
@@ -198,11 +202,35 @@ func runSim(simCounter int) {
 		log.Fatalln("error writing csv:", err)
 	}
 
-	appendToFile(adjFile, fmt.Sprintf("### SIMULATION #%d\n", simCounter+1))
-	err = simulation.WriteAdjlist(nodeMap, adjFile)
+	// old code for wcreating adjList_result.txt
+	//f, err := os.OpenFile("./data/peering-results.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	//filename = fmt.Sprint("adjlist-", Zipf, "-", R, "-", Ro, "-", simCounter+1)
+	//err = simulation.WriteAdjlist(nodeMap, "adjlist")
+	// err = simulation.WriteAdjlist(nodeMap, filename)
+	//err = simulation.WriteAdjlist(nodeMap, fmt.Sprint("adjlist-", Zipf, "-", R, "-", Ro, "-", simCounter+1))
+	//if err != nil {
+	//	log.Fatalln("error writing adjlist:", err)
+	//}
+
+	// new code for wcreating result_adjlist.txt, without using the simulation package
+
+	filenameResult := fmt.Sprint("data/result_adjlist-", nuNodes, "-", nuNeighbors, "-", Zipf, "-", R, "-", Ro, "-", simCounter+1, ".txt")
+	fResult, err := os.Create(filenameResult)
 	if err != nil {
-		log.Fatalln("error writing adjlist:", err)
+		log.Fatalf("error opening file: %v", err)
 	}
+	defer fResult.Close()
+	w := bufio.NewWriter(fResult)
+	for id, node := range nodeMap {
+		_, _ = w.WriteString(id.String())
+		out := node.GetOutgoingNeighbors()
+		for _, n := range out {
+			_, _ = w.WriteRune(' ')
+			_, _ = w.WriteString(n.ID().String())
+		}
+		_, _ = w.WriteRune('\n')
+	}
+	w.Flush()
 
 	// g := graph.New(identities)
 	// for _, identity := range identities {
@@ -222,20 +250,28 @@ func main() {
 	if config.VisEnabled() {
 		startServer()
 	}
+	for _, R := range config.RSlice() {
+		for _, nuNodes := range config.NumberNodesSlice() {
+			for _, nuOutNeighbors := range config.NumberOutNeighborsSlice() {
+				for _, Ro := range config.RoSlice() {
+					for _, Zipf := range config.ZipfSlice() {
+						for i := 0; i < config.Runs(); i++ {
+							fmt.Println(nuNodes)
+							runSim(i, nuNodes, nuOutNeighbors, R, float64(Ro), float64(Zipf)/100)
+						}
+					}
 
-	// reset previous simulation results
-	filenames := []string{"data/peering-results.txt", "data/result_adjlist.txt"}
-	for _, filename := range filenames {
-		f, err := os.Create(filename)
-		if err != nil {
-			log.Fatalf("error opening file: %v", err)
+				}
+
+			}
+
 		}
-		f.Close()
 	}
 
-	for i := 0; i < config.Runs(); i++ {
-		runSim(i)
-	}
+	//fmt.Println(config.NumberNodesSlice())
+	//for i := 0; i < config.Runs(); i++ {
+	//	runSim(i)
+	//}
 }
 
 func startServer() {

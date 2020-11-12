@@ -1,14 +1,13 @@
 {
-  "NumberNodes": 100,
-  "Duration": 10,
-  "Runs": 2,
-  "SaltLifetime": 3000,
+  "NumberNodes": [5],
+  "Duration": 1,
+  "Runs": 1,
+  "SaltLifetime": 1,
   "VisualEnabled": false,
   "DropOnUpdate": false,
-  "InboundNeighborhood": 4,
-  "OutboundNeighborhood": 4,
-  "mana": false,
-  "R" : 10,
-  "Ro" : 2,
-  "zipf": 1
+  "NumberOutNeighbors": [20],
+  "mana": true,
+  "R" : [10],
+  "Ro" : [2],
+  "zipf": [100, 150]
 }
