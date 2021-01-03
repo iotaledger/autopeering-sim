@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/iotaledger/hive.go/configuration"
+	"github.com/iotaledger/hive.go/events"
 	"log"
 	"math/rand"
 	"net"
@@ -13,10 +15,8 @@ import (
 	"github.com/iotaledger/autopeering-sim/simulation/visualizer"
 	"github.com/iotaledger/hive.go/autopeering/peer"
 	"github.com/iotaledger/hive.go/autopeering/selection"
-	"github.com/iotaledger/hive.go/events"
 	"github.com/iotaledger/hive.go/identity"
 	"github.com/iotaledger/hive.go/logger"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -46,46 +46,50 @@ func getAllPeers() []*peer.Peer {
 	return result
 }
 
-func runSim() {
+func runSim(configuration *configuration.Configuration) {
 	log.Println("Run simulation with the following parameters:")
-	config.PrintConfig()
+	configuration.Print()
 
 	selection.SetParameters(selection.Parameters{
-		SaltLifetime:           config.SaltLifetime(),
+		SaltLifetime:           config.SaltLifetime(configuration),
 		OutboundUpdateInterval: 200 * time.Millisecond, // use exactly the same update time as previously
 	})
-
-	closure := events.NewClosure(func(ev *selection.PeeringEvent) {
-		if ev.Status {
-			log.Printf("Peering: %s<->%s\n", ev.Self.String(), ev.Peer.ID())
-		}
-	})
-	selection.Events.OutgoingPeering.Attach(closure)
-	defer selection.Events.OutgoingPeering.Detach(closure)
 
 	//lambda := (float64(N) / SaltLifetime.Seconds()) * 10
 	initialSalt := 0.
 
 	log.Println("Creating peers ...")
 	netw := transport.NewNetwork()
-	nodeMap = make(map[identity.ID]simulation.Node, config.NumberNodes())
-	for i := 0; i < config.NumberNodes(); i++ {
-		node := simulation.NewNode(transport.PeerID(i), time.Duration(initialSalt)*time.Second, netw, config.DropOnUpdate(), discover)
+	nodeMap = make(map[identity.ID]simulation.Node, config.NumberNodes(configuration))
+	for i := 0; i < config.NumberNodes(configuration); i++ {
+		node := simulation.NewNode(transport.PeerID(i), time.Duration(initialSalt)*time.Second, netw, config.DropOnUpdate(configuration), discover)
 		nodeMap[node.ID()] = node
 
-		if config.VisEnabled() {
+		if config.VisEnabled(configuration) {
 			visualizer.AddNode(node.ID().String())
 		}
 
 		// initialSalt = initialSalt + (1 / lambda)				 // constant rate
 		// initialSalt = initialSalt + rand.ExpFloat64()/lambda  // poisson process
-		initialSalt = rand.Float64() * config.SaltLifetime().Seconds() // random
+		initialSalt = rand.Float64() * config.SaltLifetime(configuration).Seconds() // random
+		closure := events.NewClosure(func(ev *selection.PeeringEvent) {
+			if ev.Status {
+				log.Printf("Peering: %s<->%s\n", node.ID(), ev.Peer.ID())
+			}
+		})
+		node.Prot.Events().IncomingPeering.Attach(closure)
+
+		dropClosure := events.NewClosure(func(ev *selection.DroppedEvent) {
+			log.Printf("Dropping: %s<->%s\n", node.ID(), ev.DroppedID)
+		})
+		node.Prot.Events().Dropped.Attach(dropClosure)
 	}
+
 	log.Println("Creating peers ... done")
 
-	analysis := simulation.NewLinkAnalysis(nodeMap)
+	analysis := simulation.NewLinkAnalysis(nodeMap, configuration)
 
-	if config.VisEnabled() {
+	if config.VisEnabled(configuration) {
 		statVisualizer()
 	}
 
@@ -97,14 +101,14 @@ func runSim() {
 	log.Println("Starting peering ... done")
 
 	log.Println("Running ...")
-	time.Sleep(config.Duration())
+	time.Sleep(config.Duration(configuration))
 
 	log.Println("Stopping peering  ...")
 	for _, node := range nodeMap {
 		node.Stop()
 	}
 	analysis.Stop()
-	if config.VisEnabled() {
+	if config.VisEnabled(configuration) {
 		stopServer()
 	}
 	log.Println("Stopping peering ... done")
@@ -123,7 +127,7 @@ func runSim() {
 		log.Fatalln("error writing csv:", err)
 	}
 
-	msgAnalysis := simulation.MessagesToString(nodeMap, analysis.Status())
+	msgAnalysis := simulation.MessagesToString(nodeMap, analysis.Status(), configuration)
 	err = simulation.WriteCSV(msgAnalysis, "msgAnalysis", []string{"ID", "OUT", "ACC", "REJ", "IN", "DROP"})
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
@@ -136,14 +140,16 @@ func runSim() {
 }
 
 func main() {
-	config.Load()
-	if err := logger.InitGlobalLogger(viper.GetViper()); err != nil {
+	config := configuration.New()
+	_ = config.LoadFile("config.json")
+
+	if err := logger.InitGlobalLogger(config); err != nil {
 		panic(err)
 	}
-	if config.VisEnabled() {
+	if config.Bool("VisualEnabled") {
 		startServer()
 	}
-	runSim()
+	runSim(config)
 }
 
 func startServer() {

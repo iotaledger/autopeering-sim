@@ -11,14 +11,14 @@ import (
 	"github.com/iotaledger/hive.go/autopeering/salt"
 	"github.com/iotaledger/hive.go/autopeering/selection"
 	"github.com/iotaledger/hive.go/autopeering/server"
-	"github.com/iotaledger/hive.go/database/mapdb"
 	"github.com/iotaledger/hive.go/identity"
+	"github.com/iotaledger/hive.go/kvstore/mapdb"
 	"github.com/iotaledger/hive.go/logger"
 )
 
 type Node struct {
 	local *peer.Local
-	prot  *selection.Protocol
+	Prot  *selection.Protocol
 
 	Start func()
 	Stop  func()
@@ -45,7 +45,7 @@ func NewNode(id transport.PeerID, saltLifetime time.Duration, network *transport
 
 	return Node{
 		local: local,
-		prot:  prot,
+		Prot:  prot,
 		Start: func() {
 			prot.Start(srv)
 		},
@@ -66,9 +66,9 @@ func (n Node) Peer() *peer.Peer {
 }
 
 func (n Node) GetNeighbors() []*peer.Peer {
-	return n.prot.GetNeighbors()
+	return n.Prot.GetNeighbors()
 }
 
 func (n Node) GetOutgoingNeighbors() []*peer.Peer {
-	return n.prot.GetOutgoingNeighbors()
+	return n.Prot.GetOutgoingNeighbors()
 }

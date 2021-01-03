@@ -1,12 +1,8 @@
 package config
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
+	"github.com/iotaledger/hive.go/configuration"
 	"time"
-
-	"github.com/spf13/viper"
 )
 
 // Config keys
@@ -18,50 +14,22 @@ const (
 	dropOnUpdate = "DropOnUpdate"
 )
 
-func init() {
-	viper.SetDefault(numberNodes, 100)
-	viper.SetDefault(duration, 60)
-	viper.SetDefault(saltLifetime, 60*60)
-	viper.SetDefault(vEnabled, false)
-	viper.SetDefault(dropOnUpdate, false)
+func NumberNodes(config *configuration.Configuration) int {
+	return config.Int(numberNodes)
 }
 
-func Load() {
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
-
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Println("Using default config")
-		} else {
-			log.Fatal(err)
-		}
-	}
+func Duration(config *configuration.Configuration) time.Duration {
+	return time.Duration(config.Int(duration)) * time.Second
 }
 
-func PrintConfig() {
-	settings := viper.AllSettings()
-	if cfg, err := json.MarshalIndent(settings, "", "  "); err == nil {
-		fmt.Println(string(cfg))
-	}
+func SaltLifetime(config *configuration.Configuration) time.Duration {
+	return time.Duration(config.Int(saltLifetime)) * time.Second
 }
 
-func NumberNodes() int {
-	return viper.GetInt(numberNodes)
+func DropOnUpdate(config *configuration.Configuration) bool {
+	return config.Bool(dropOnUpdate)
 }
 
-func Duration() time.Duration {
-	return time.Duration(viper.GetInt(duration)) * time.Second
-}
-
-func SaltLifetime() time.Duration {
-	return time.Duration(viper.GetInt(saltLifetime)) * time.Second
-}
-
-func DropOnUpdate() bool {
-	return viper.GetBool(dropOnUpdate)
-}
-
-func VisEnabled() bool {
-	return viper.GetBool(vEnabled)
+func VisEnabled(config *configuration.Configuration) bool {
+	return config.Bool(vEnabled)
 }

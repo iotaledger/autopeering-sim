@@ -1,6 +1,7 @@
 package simulation
 
 import (
+	"github.com/iotaledger/hive.go/configuration"
 	"sync"
 	"time"
 
@@ -11,28 +12,38 @@ import (
 	"github.com/iotaledger/hive.go/identity"
 )
 
-type linkAnalysis struct {
-	nodeMap map[identity.ID]Node
+type DroppedEventSim struct {
+	selection.DroppedEvent
+	Self identity.ID
+}
+type PeeringEventSim struct {
+	selection.PeeringEvent
+	Self identity.ID
+}
 
-	startTime    time.Time
-	incomingChan chan *selection.PeeringEvent
-	outgoingChan chan *selection.PeeringEvent
-	dropChan     chan *selection.DroppedEvent
-	status       *StatusMap
-	links        []Link
+type linkAnalysis struct {
+	nodeMap       map[identity.ID]Node
+	configuration *configuration.Configuration
+	startTime     time.Time
+	incomingChan  chan *PeeringEventSim
+	outgoingChan  chan *PeeringEventSim
+	dropChan      chan *DroppedEventSim
+	status        *StatusMap
+	links         []Link
 
 	closing chan struct{}
 	wg      sync.WaitGroup
 }
 
-func NewLinkAnalysis(nodeMap map[identity.ID]Node) *linkAnalysis {
+func NewLinkAnalysis(nodeMap map[identity.ID]Node, c *configuration.Configuration) *linkAnalysis {
 	return &linkAnalysis{
-		nodeMap:      nodeMap,
-		incomingChan: make(chan *selection.PeeringEvent, 10),
-		outgoingChan: make(chan *selection.PeeringEvent, 10),
-		dropChan:     make(chan *selection.DroppedEvent, 10),
-		status:       NewStatusMap(),
-		closing:      make(chan struct{}),
+		configuration: c,
+		nodeMap:       nodeMap,
+		incomingChan:  make(chan *PeeringEventSim, 10),
+		outgoingChan:  make(chan *PeeringEventSim, 10),
+		dropChan:      make(chan *DroppedEventSim, 10),
+		status:        NewStatusMap(),
+		closing:       make(chan struct{}),
 	}
 }
 
@@ -70,19 +81,19 @@ func (la *linkAnalysis) loop() {
 
 		// handle incoming peering requests
 		case req := <-la.incomingChan:
-			la.status.Append(req.Peer.ID(), req.Self, INCOMING)
+			la.status.Append(req.PeeringEvent.Peer.ID(), req.Self, INCOMING)
 
 		// handle outgoing peering requests
 		case req := <-la.outgoingChan:
 			from := req.Self
-			to := req.Peer.ID()
+			to := req.PeeringEvent.Peer.ID()
 			la.status.Append(from, to, OUTBOUND)
 
 			// accepted/rejected is only recorded for outgoing requests
 			if req.Status {
 				la.status.Append(from, to, ACCEPTED)
 				la.links = append(la.links, NewLink(from, to, time.Since(la.startTime).Milliseconds()))
-				if config.VisEnabled() {
+				if config.VisEnabled(la.configuration) {
 					visualizer.AddLink(req.Self.String(), req.Peer.ID().String())
 				}
 			} else {
@@ -95,7 +106,7 @@ func (la *linkAnalysis) loop() {
 			to := req.DroppedID
 			la.status.Append(from, to, DROPPED)
 			DropLink(from, to, time.Since(la.startTime).Milliseconds(), la.links)
-			if config.VisEnabled() {
+			if config.VisEnabled(la.configuration) {
 				visualizer.RemoveLink(req.Self.String(), req.DroppedID.String())
 			}
 
@@ -110,18 +121,26 @@ func (la *linkAnalysis) loop() {
 
 // subscribe subscribes to the selection events.
 func (la *linkAnalysis) subscribe() func() {
-	incomingClosure := events.NewClosure(func(e *selection.PeeringEvent) { la.incomingChan <- e })
-	outgoingClosure := events.NewClosure(func(e *selection.PeeringEvent) { la.outgoingChan <- e })
-	dropClosure := events.NewClosure(func(e *selection.DroppedEvent) { la.dropChan <- e })
 
-	selection.Events.IncomingPeering.Attach(incomingClosure)
-	selection.Events.OutgoingPeering.Attach(outgoingClosure)
-	selection.Events.Dropped.Attach(dropClosure)
+	for _, node := range la.nodeMap {
+		id := node.ID()
+		incomingClosure := events.NewClosure(func(e *selection.PeeringEvent) { la.incomingChan <- &PeeringEventSim{Self: id, PeeringEvent: *e} })
+		outgoingClosure := events.NewClosure(func(e *selection.PeeringEvent) { la.outgoingChan <- &PeeringEventSim{Self: id, PeeringEvent: *e} })
+		dropClosure := events.NewClosure(func(e *selection.DroppedEvent) { la.dropChan <- &DroppedEventSim{Self: id, DroppedEvent: *e} })
+
+		node.Prot.Events().IncomingPeering.Attach(incomingClosure)
+		node.Prot.Events().OutgoingPeering.Attach(outgoingClosure)
+		node.Prot.Events().Dropped.Attach(dropClosure)
+
+	}
 
 	return func() {
-		selection.Events.IncomingPeering.Detach(incomingClosure)
-		selection.Events.OutgoingPeering.Detach(outgoingClosure)
-		selection.Events.Dropped.Detach(dropClosure)
+		for _, node := range la.nodeMap {
+			node.Prot.Events().IncomingPeering.DetachAll()
+			node.Prot.Events().OutgoingPeering.DetachAll()
+			node.Prot.Events().Dropped.DetachAll()
+
+		}
 	}
 }
 
@@ -135,7 +154,7 @@ func (la *linkAnalysis) updateConvergence(time time.Duration) {
 		}
 		avgNeighbors += l
 	}
-	c := (float64(counter) / float64(config.NumberNodes())) * 100
-	avg := float64(avgNeighbors) / float64(config.NumberNodes())
+	c := (float64(counter) / float64(config.NumberNodes(la.configuration))) * 100
+	avg := float64(avgNeighbors) / float64(config.NumberNodes(la.configuration))
 	RecordConv.Append(Convergence{time, c, avg})
 }
