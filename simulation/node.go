@@ -8,7 +8,6 @@ import (
 	"github.com/iotaledger/autopeering-sim/simulation/transport"
 	"github.com/iotaledger/hive.go/autopeering/peer"
 	"github.com/iotaledger/hive.go/autopeering/peer/service"
-	"github.com/iotaledger/hive.go/autopeering/salt"
 	"github.com/iotaledger/hive.go/autopeering/selection"
 	"github.com/iotaledger/hive.go/autopeering/server"
 	"github.com/iotaledger/hive.go/identity"
@@ -34,11 +33,6 @@ func NewNode(id transport.PeerID, saltLifetime time.Duration, network *transport
 	db, _ := peer.NewDB(mapdb.NewMapDB())
 
 	local, _ := peer.NewLocal(conn.LocalAddr().(*net.UDPAddr).IP, services, db)
-
-	s, _ := salt.NewSalt(saltLifetime)
-	local.SetPrivateSalt(s)
-	s, _ = salt.NewSalt(saltLifetime)
-	local.SetPublicSalt(s)
 
 	prot := selection.New(local, discover, selection.Logger(log), selection.DropOnUpdate(dropOnUpdate))
 	srv := server.Serve(local, conn, log, prot)

@@ -7,11 +7,11 @@ import (
 
 // Config keys
 const (
-	numberNodes  = "NumberNodes"
-	duration     = "Duration"
-	saltLifetime = "SaltLifetime"
-	vEnabled     = "VisualEnabled"
-	dropOnUpdate = "DropOnUpdate"
+	numberNodes   = "NumberNodes"
+	duration      = "Duration"
+	arrowLifetime = "ArrowLifetime"
+	vEnabled      = "VisualEnabled"
+	dropOnUpdate  = "DropOnUpdate"
 )
 
 func NumberNodes(config *configuration.Configuration) int {
@@ -22,8 +22,8 @@ func Duration(config *configuration.Configuration) time.Duration {
 	return time.Duration(config.Int(duration)) * time.Second
 }
 
-func SaltLifetime(config *configuration.Configuration) time.Duration {
-	return time.Duration(config.Int(saltLifetime)) * time.Second
+func ArrowLifetime(config *configuration.Configuration) time.Duration {
+	return time.Duration(config.Int(arrowLifetime)) * time.Second
 }
 
 func DropOnUpdate(config *configuration.Configuration) bool {

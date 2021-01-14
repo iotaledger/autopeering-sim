@@ -51,11 +51,11 @@ func runSim(configuration *configuration.Configuration) {
 	configuration.Print()
 
 	selection.SetParameters(selection.Parameters{
-		SaltLifetime:           config.SaltLifetime(configuration),
+		ArRowLifetime:          config.ArrowLifetime(configuration),
 		OutboundUpdateInterval: 200 * time.Millisecond, // use exactly the same update time as previously
 	})
 
-	//lambda := (float64(N) / SaltLifetime.Seconds()) * 10
+	//lambda := (float64(N) / ArrowLifetime.Seconds()) * 10
 	initialSalt := 0.
 
 	log.Println("Creating peers ...")
@@ -71,16 +71,19 @@ func runSim(configuration *configuration.Configuration) {
 
 		// initialSalt = initialSalt + (1 / lambda)				 // constant rate
 		// initialSalt = initialSalt + rand.ExpFloat64()/lambda  // poisson process
-		initialSalt = rand.Float64() * config.SaltLifetime(configuration).Seconds() // random
-		closure := events.NewClosure(func(ev *selection.PeeringEvent) {
+		initialSalt = rand.Float64() * config.ArrowLifetime(configuration).Seconds() // random
+		inClosure := events.NewClosure(func(ev *selection.PeeringEvent) {
 			if ev.Status {
-				log.Printf("Peering: %s<->%s\n", node.ID(), ev.Peer.ID())
+				log.Printf("Accepted peering: %s<->%s (chan: %d)\n", node.Peer().ID(), ev.Peer.ID(), ev.Channel)
+			} else {
+				log.Printf("Rejected peering: %s<->%s (chan: %d)\n", node.Peer().ID(), ev.Peer.ID(), ev.Channel)
 			}
 		})
-		node.Prot.Events().IncomingPeering.Attach(closure)
+
+		node.Prot.Events().IncomingPeering.Attach(inClosure)
 
 		dropClosure := events.NewClosure(func(ev *selection.DroppedEvent) {
-			log.Printf("Dropping: %s<->%s\n", node.ID(), ev.DroppedID)
+			log.Printf("Dropping: %s<->%s\n", node.Peer().ID(), ev.DroppedID)
 		})
 		node.Prot.Events().Dropped.Attach(dropClosure)
 	}
