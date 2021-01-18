@@ -2,6 +2,7 @@ package simulation
 
 import (
 	"fmt"
+	"github.com/iotaledger/hive.go/configuration"
 	"os"
 	"sort"
 
@@ -52,7 +53,7 @@ func ConvergenceToString() (output [][]string) {
 	return output
 }
 
-func MessagesToString(nodeMap map[identity.ID]Node, status *StatusMap) (output [][]string) {
+func MessagesToString(nodeMap map[identity.ID]Node, status *StatusMap, configuration *configuration.Configuration) (output [][]string) {
 	avgResult := StatusSum{}
 
 	//fmt.Printf("\nID\tOUT\tACC\tREJ\tIN\tDROP\n")
@@ -77,7 +78,7 @@ func MessagesToString(nodeMap map[identity.ID]Node, status *StatusMap) (output [
 
 	}
 
-	N := config.NumberNodes()
+	N := config.NumberNodes(configuration)
 	record := []string{
 		fmt.Sprintf("%v", "Avg"),
 		fmt.Sprintf("%v", float64(avgResult.outbound)/float64(N)),

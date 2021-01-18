@@ -1,7 +1,7 @@
 {
   "NumberNodes": 100,
   "Duration": 100,
-  "SaltLifetime": 3600,
+  "ArrowLifetime": 3600,
   "VisualEnabled": true,
   "DropOnUpdate": false
 }
