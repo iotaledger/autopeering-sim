@@ -135,12 +135,13 @@ func RunSim() {
 		termTickerChan <- true
 	}
 
-	// Stop simulation
+	// Stop all peers
 	log.Println("Closing...")
 	for _, peer := range allPeers {
 		protocolMap[peer.ID()].Close()
 	}
 	log.Println("Closing Done")
+
 	// stop runLinkAnalysis and finalize convMsg data
 	close(closing)
 	// stop runMsgAnalysis and finalize msgPerT data
@@ -149,40 +150,9 @@ func RunSim() {
 	// Wait until analysis goroutine stops
 	wg.Wait()
 
-	// Start finalize simulation result
-	linkAnalysis := linksToString(LinkSurvival(Links))
-	err := writeCSV(linkAnalysis, "linkAnalysis", []string{"X", "Y"})
-	if err != nil {
-		log.Fatalln("error writing csv:", err)
-	}
+	// Conclude analysis results and write into csv files
+	writeAnalysisResults()
 
-	convAnalysis := convergenceToString(RecordConv.convergence)
-	err = writeCSV(convAnalysis, "convAnalysis", []string{"X", "Y"})
-	if err != nil {
-		log.Fatalln("error writing csv:", err)
-	}
-
-	msgAnalysis := messagesToString(status)
-	err = writeCSV(msgAnalysis, "msgAnalysis", []string{"ID", "OUT", "ACC", "REJ", "IN", "DROP"})
-	if err != nil {
-		log.Fatalln("error writing csv:", err)
-	}
-
-	// calculate avg messages to converge
-	convMsgAnalysis, convAvgMsg := convMsgToString(convMsg)
-	err = writeCSV(convMsgAnalysis, "convMsgAnalysis", []string{"MSG"})
-	if err != nil {
-		log.Fatalln("error writing csv:", err)
-	}
-	fmt.Println("avg message to converge ", convAvgMsg)
-
-	// calculate avg messages per T
-	msgPerTAnalysis, msgPerTAvg := msgPerTToString()
-	err = writeCSV(msgPerTAnalysis, "msgPerTAnalysis", []string{"MSG"})
-	if err != nil {
-		log.Fatalln("error writing csv:", err)
-	}
-	fmt.Println("avg message per T ", msgPerTAvg)
 	log.Println("Simulation Done")
 }
 
@@ -311,4 +281,41 @@ func updateConvergence(time time.Duration) {
 	c := (float64(counter) / float64(N)) * 100
 	avg := float64(avgNeighbors) / float64(N)
 	RecordConv.Append(Convergence{time, c, avg})
+}
+
+func writeAnalysisResults() {
+	// Start finalize simulation result
+	linkAnalysis := linksToString(LinkSurvival(Links))
+	err := writeCSV(linkAnalysis, "linkAnalysis", []string{"X", "Y"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+
+	convAnalysis := convergenceToString(RecordConv.convergence)
+	err = writeCSV(convAnalysis, "convAnalysis", []string{"X", "Y"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+
+	msgAnalysis := messagesToString(status)
+	err = writeCSV(msgAnalysis, "msgAnalysis", []string{"ID", "OUT", "ACC", "REJ", "IN", "DROP"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+
+	// calculate avg messages to converge
+	convMsgAnalysis, convAvgMsg := convMsgToString(convMsg)
+	err = writeCSV(convMsgAnalysis, "convMsgAnalysis", []string{"MSG"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+	fmt.Println("avg message to converge ", convAvgMsg)
+
+	// calculate avg messages per T
+	msgPerTAnalysis, msgPerTAvg := msgPerTToString()
+	err = writeCSV(msgPerTAnalysis, "msgPerTAnalysis", []string{"MSG"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+	fmt.Println("avg message per T ", msgPerTAvg)
 }
