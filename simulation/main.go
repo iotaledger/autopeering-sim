@@ -42,9 +42,11 @@ var (
 	DropAllFlag  = false
 )
 
-// dummyDiscovery is a dummy implementation of DiscoveryProtocol never returning any verified peers.
+// dummyDiscovery is a dummy implementation of DiscoveryProtocol.
 type dummyDiscovery struct{}
 
+// This simulation focuses on peer selection only.
+// Thus, every peer is verified in order to skip the discovery ping-pong process.
 func (d dummyDiscovery) IsVerified(peer.ID, string) bool                    { return true }
 func (d dummyDiscovery) EnsureVerified(p *peer.Peer)                        {}
 func (d dummyDiscovery) GetVerifiedPeer(id peer.ID, addr string) *peer.Peer { return peerMap[id] }
@@ -112,16 +114,22 @@ func RunSim() {
 		protocolMap[peer.ID()].Start(srv)
 	}
 
-	///* Get stable phase info
-	time.Sleep(time.Duration(30) * time.Second)
-	for i := range allPeers {
-		status.ClearStatusMap(uint16(i))
-		RecordConv.ClearConvergence()
-	}
+	/* Get stable phase info
+	    // Remove the collected data of the first T in order to collect data of stable phase,
+	    // i.e., peers already have neighbors, and started to update their neighbors.
+	    // TODO: make this configurable, and use T instead of 30.
+		time.Sleep(time.Duration(30) * time.Second)
+		for i := range allPeers {
+			status.ClearStatusMap(uint16(i))
+			RecordConv.ClearConvergence()
+		}
 
-	time.Sleep(time.Duration(SimDuration-30) * time.Second)
-	//*/
-	//time.Sleep(time.Duration(SimDuration) * time.Second)
+		time.Sleep(time.Duration(SimDuration-30) * time.Second)
+	*/
+
+	// sleep here and wait the peers finding neighbors
+	time.Sleep(time.Duration(SimDuration) * time.Second)
+
 	// Stop updating visualizer
 	if vEnabled {
 		termTickerChan <- true
@@ -133,7 +141,9 @@ func RunSim() {
 		protocolMap[peer.ID()].Close()
 	}
 	log.Println("Closing Done")
+	// stop runLinkAnalysis and finalize convMsg data
 	close(closing)
+	// stop runMsgAnalysis and finalize msgPerT data
 	saltTermChan <- true
 
 	// Wait until analysis goroutine stops
@@ -145,14 +155,12 @@ func RunSim() {
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
 	}
-	//	log.Println(linkAnalysis)
 
 	convAnalysis := convergenceToString(RecordConv.convergence)
 	err = writeCSV(convAnalysis, "convAnalysis", []string{"X", "Y"})
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
 	}
-	//log.Println(RecordConv)
 
 	msgAnalysis := messagesToString(status)
 	err = writeCSV(msgAnalysis, "msgAnalysis", []string{"ID", "OUT", "ACC", "REJ", "IN", "DROP"})

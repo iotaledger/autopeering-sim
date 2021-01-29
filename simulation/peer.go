@@ -21,6 +21,7 @@ type simPeer struct {
 func newPeer(name string, saltLifetime time.Duration) simPeer {
 	var l *zap.Logger
 	var err error
+	// setting logger
 	if name == "1" {
 		l, err = zap.NewDevelopment()
 		//l, err = zap.NewProduction()
