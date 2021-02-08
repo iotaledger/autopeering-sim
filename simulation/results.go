@@ -75,16 +75,16 @@ func messagesToString(status *StatusMap) (output [][]string) {
 
 	}
 
-	record := []string{
-		fmt.Sprintf("%v", "Avg"),
-		fmt.Sprintf("%v", float64(avgResult.outbound)/float64(N)),
-		fmt.Sprintf("%v", float64(avgResult.accepted)/float64(N)),
-		fmt.Sprintf("%v", float64(avgResult.rejected)/float64(N)),
-		fmt.Sprintf("%v", float64(avgResult.incoming)/float64(N)),
-		fmt.Sprintf("%v", float64(avgResult.dropped)/float64(N)),
-	}
+	// record := []string{
+	// 	fmt.Sprintf("%v", "Avg"),
+	// 	fmt.Sprintf("%v", float64(avgResult.outbound)/float64(N)),
+	// 	fmt.Sprintf("%v", float64(avgResult.accepted)/float64(N)),
+	// 	fmt.Sprintf("%v", float64(avgResult.rejected)/float64(N)),
+	// 	fmt.Sprintf("%v", float64(avgResult.incoming)/float64(N)),
+	// 	fmt.Sprintf("%v", float64(avgResult.dropped)/float64(N)),
+	// }
 
-	output = append(output, record)
+	// output = append(output, record)
 
 	return output
 }

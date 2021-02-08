@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	accept = true
-	reject = false
+	accept            = true
+	reject            = false
+	resetFilteredList = true // reset filteredList when it is empty
 
 	// buffer size of the channels handling inbound requests and drops.
 	queueSize = 100
@@ -152,7 +153,7 @@ Loop:
 			if updateOutboundDone == nil {
 				// check salt and update if necessary (this will drop the whole neighborhood)
 				if m.net.local().GetPublicSalt().Expired() {
-                    ExpiredSaltChan <- m.net.local().ID()
+					ExpiredSaltChan <- m.net.local().ID()
 					m.updateSalt()
 				}
 
@@ -233,6 +234,14 @@ func (m *manager) updateOutbound(done chan<- struct{}) {
 
 	filteredList := filter.Apply(distList)               // filter out current neighbors
 	filteredList = m.rejectionFilter.Apply(filteredList) // filter out previous rejection
+
+	// reset filter so that next round filteredList is full again
+	if resetFilteredList {
+		if len(filteredList) < 2 {
+			m.rejectionFilter.Clean()
+		}
+
+	}
 
 	// select new candidate
 	candidate := m.outbound.Select(filteredList)

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+
 	//"math/rand"
 	"sync"
 	"time"
@@ -37,9 +38,11 @@ var (
 
 	N            = 100
 	vEnabled     = false
-	SimDuration  = 300
-	SaltLifetime = 300 * time.Second
+	SimDuration  = 30
+	SaltLifetime = 10 * time.Second
 	DropAllFlag  = false
+	cutoffstart  = true
+	cutofftime   = 40 * time.Second
 )
 
 // dummyDiscovery is a dummy implementation of DiscoveryProtocol.
@@ -66,7 +69,7 @@ func RunSim() {
 
 	convMsg = make([]int, N)
 	initialSalt := 0.
-	//lambda := (float64(N) / SaltLifetime.Seconds()) * 10
+	// lambda := (float64(N) / SaltLifetime.Seconds())
 
 	log.Println("Creating peers...")
 	for i := range allPeers {
@@ -95,9 +98,9 @@ func RunSim() {
 			visualizer.AddNode(id.String())
 		}
 
-		// initialSalt = initialSalt + (1 / lambda)				 // constant rate
+		initialSalt = initialSalt + (SaltLifetime.Seconds() / float64(N)) // constant rate
 		// initialSalt = initialSalt + rand.ExpFloat64()/lambda  // poisson process
-		//initialSalt = rand.Float64() * SaltLifetime.Seconds() // random
+		// initialSalt = rand.Float64() * SaltLifetime.Seconds() // random
 	}
 
 	fmt.Println("start link analysis")
@@ -114,21 +117,32 @@ func RunSim() {
 		protocolMap[peer.ID()].Start(srv)
 	}
 
-	/* Get stable phase info
-	    // Remove the collected data of the first T in order to collect data of stable phase,
-	    // i.e., peers already have neighbors, and started to update their neighbors.
-	    // TODO: make this configurable, and use T instead of 30.
-		time.Sleep(time.Duration(30) * time.Second)
+	// time.Sleep(time.Duration(30) * time.Second)
+	// for i := range allPeers {
+	// 	status.ClearStatusMap(uint16(i))
+	// 	RecordConv.ClearConvergence()
+	// }
+	// time.Sleep(time.Duration(SimDuration-30) * time.Second)
+
+	if cutoffstart {
+		// Get stable phase info
+		// Remove the collected data of the first T in order to collect data of stable phase,
+		// i.e., peers already have neighbors, and started to update their neighbors.
+		// TODO: make this configurable, and use T instead of 30.
+		fmt.Println("Sleep for ", cutofftime)
+		time.Sleep(cutofftime)
+		// delete all data after the inital wait time
 		for i := range allPeers {
 			status.ClearStatusMap(uint16(i))
 			RecordConv.ClearConvergence()
 		}
-
-		time.Sleep(time.Duration(SimDuration-30) * time.Second)
-	*/
-
-	// sleep here and wait the peers finding neighbors
-	time.Sleep(time.Duration(SimDuration) * time.Second)
+		fmt.Println("Deleted data - sleep for ", time.Duration((float64(SimDuration)-cutofftime.Seconds()))*time.Second, " sec")
+		time.Sleep(time.Duration((float64(SimDuration) - cutofftime.Seconds())) * time.Second)
+	} else {
+		// sleep here and wait for the entirety of the simulation
+		fmt.Println("Sleep for ", SimDuration)
+		time.Sleep(time.Duration(SimDuration) * time.Second)
+	}
 
 	// Stop updating visualizer
 	if vEnabled {
@@ -238,7 +252,8 @@ func runMsgAnalysis() {
 			case p := <-selection.ExpiredSaltChan:
 				pID := idMap[p]
 				msgPerTList[pID] = append(msgPerTList[pID], status.MsgLen(pID))
-				status.ClearStatusMap(pID)
+				// use this to keep the value for only the last salt interval
+				// status.ClearStatusMap(pID)
 			case <-saltTermChan:
 				// if some node's salt is not expired
 				for i := range allPeers {
