@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
-    "strconv"
+	"strconv"
 )
 
 func createDirIfNotExist(dir string) {
@@ -90,43 +90,118 @@ func messagesToString(status *StatusMap) (output [][]string) {
 	return output
 }
 
-func distanceToString() (output [][]string) {
-	distList := make(map[float64]int)
+/// Distance to strings //////////////////////////////////////////////////////////////////
+
+func distanceToString() (output, outputHisto [][]string) {
+	distList := make([]float64, len(allPeers))
+	distListHisto := make(map[float64]int)
 	var totalDist, numDist uint64
-	for _, peer := range allPeers {
-        dist := mgrMap[peer.ID()].GetNeighborsDistance()
+	for i, peer := range allPeers {
+		dist := mgrMap[peer.ID()].GetNeighborsDistance()
+		minDist := uint32(4294967295)
 		for _, d := range dist {
-            numDist++
-			totalDist += uint64(d)
-            index, _ := strconv.ParseFloat(strconv.FormatFloat(float64(d), 'e', 1, 64), 64)
-            distList[index]++
+			if d < minDist {
+				minDist = d
+			}
 		}
+		numDist++
+		totalDist += uint64(minDist)
+		distList[i] = float64(minDist)
+		distkey, _ := strconv.ParseFloat(strconv.FormatFloat(float64(minDist), 'e', 1, 64), 64)
+		distListHisto[distkey]++
 	}
-    fmt.Println("avgDistance: ", float64(totalDist) / float64(numDist))
-    // PDF
-	for key, num := range distList {
+	fmt.Println("avgDistance: ", float64(totalDist)/float64(numDist))
+	// data
+	for i, dist := range distList {
+		record := []string{
+			fmt.Sprintf("%v", i),
+			fmt.Sprintf("%v", dist),
+		}
+		output = append(output, record)
+	}
+	// PDF
+	for key, num := range distListHisto {
 		record := []string{
 			fmt.Sprintf("%v", key),
 			fmt.Sprintf("%v", float64(num)/float64(numDist)),
 		}
+		outputHisto = append(outputHisto, record)
+	}
+	return output, outputHisto
+}
+func distanceInboundToString() (output, outputHisto [][]string) {
+	distList := make([]float64, len(allPeers))
+	distListHisto := make(map[float64]int)
+	var totalDist, numDist uint64
+	for i, peer := range allPeers {
+		dist := mgrMap[peer.ID()].GetNeighborsDistanceInbound()
+		minDist := uint32(4294967295)
+		for _, d := range dist {
+			if d < minDist {
+				minDist = d
+			}
+		}
+		numDist++
+		totalDist += uint64(minDist)
+		distList[i] = float64(minDist)
+		distkey, _ := strconv.ParseFloat(strconv.FormatFloat(float64(minDist), 'e', 1, 64), 64)
+		distListHisto[distkey]++
+	}
+	fmt.Println("avgDistance: ", float64(totalDist)/float64(numDist))
+	// data
+	for i, dist := range distList {
+		record := []string{
+			fmt.Sprintf("%v", i),
+			fmt.Sprintf("%v", dist),
+		}
 		output = append(output, record)
 	}
-	return output
-    /*
-	var totalDist, numDist uint64
-	for _, peer := range allPeers {
-        dist := mgrMap[peer.ID()].GetNeighborsDistance()
-		for _, d := range dist {
-            numDist++
-			totalDist += uint64(d)
-            index, _ := strconv.ParseFloat(strconv.FormatFloat(float64(d), 'e', 1, 64), 64)
-            record := []string{
-                fmt.Sprintf("%v", index),
-            }
-            output = append(output, record)
+	// PDF
+	for key, num := range distListHisto {
+		record := []string{
+			fmt.Sprintf("%v", key),
+			fmt.Sprintf("%v", float64(num)/float64(numDist)),
 		}
+		outputHisto = append(outputHisto, record)
 	}
-    fmt.Println("avgDistance: ", float64(totalDist) / float64(numDist))
-	return output
-    */
+	return output, outputHisto
 }
+func distanceOutboundToString() (output, outputHisto [][]string) {
+	distList := make([]float64, len(allPeers))
+	distListHisto := make(map[float64]int)
+	var totalDist, numDist uint64
+	for i, peer := range allPeers {
+		dist := mgrMap[peer.ID()].GetNeighborsDistanceOutbound()
+		minDist := uint32(4294967295)
+		for _, d := range dist {
+			if d < minDist {
+				minDist = d
+			}
+		}
+		numDist++
+		totalDist += uint64(minDist)
+		distList[i] = float64(minDist)
+		distkey, _ := strconv.ParseFloat(strconv.FormatFloat(float64(minDist), 'e', 1, 64), 64)
+		distListHisto[distkey]++
+	}
+	fmt.Println("avgDistance: ", float64(totalDist)/float64(numDist))
+	// data
+	for i, dist := range distList {
+		record := []string{
+			fmt.Sprintf("%v", i),
+			fmt.Sprintf("%v", dist),
+		}
+		output = append(output, record)
+	}
+	// PDF
+	for key, num := range distListHisto {
+		record := []string{
+			fmt.Sprintf("%v", key),
+			fmt.Sprintf("%v", float64(num)/float64(numDist)),
+		}
+		outputHisto = append(outputHisto, record)
+	}
+	return output, outputHisto
+}
+
+/// Distance to strings END //////////////////////////////////////////////////////////////////

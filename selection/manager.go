@@ -16,8 +16,9 @@ const (
 	inboundRequestQueue = 1000
 	dropQueue           = 1000
 
-	accept = true
-	reject = false
+	accept            = true
+	reject            = false
+	resetFilteredList = true // reset filteredList when it is empty
 )
 
 // A Network represents the communication layer for the Manager.
@@ -193,6 +194,14 @@ func (m *Manager) updateOutbound(done chan<- struct{}) {
 	filteredList := filter.Apply(distList)               // filter out current neighbors
 	filteredList = m.rejectionFilter.Apply(filteredList) // filter out previous rejection
 
+	// reset filter so that next round filteredList is full again
+	if resetFilteredList {
+		if len(filteredList) < 2 {
+			m.rejectionFilter.Clean()
+		}
+
+	}
+
 	// select new candidate
 	candidate := m.outbound.Select(filteredList)
 
@@ -313,6 +322,22 @@ func (m *Manager) GetNeighborsDistance() []uint32 {
 	var distance []uint32
 
 	distance = append(distance, m.inbound.GetPeersDistance()...)
+	distance = append(distance, m.outbound.GetPeersDistance()...)
+
+	return distance
+}
+
+func (m *Manager) GetNeighborsDistanceInbound() []uint32 {
+	var distance []uint32
+
+	distance = append(distance, m.inbound.GetPeersDistance()...)
+
+	return distance
+}
+
+func (m *Manager) GetNeighborsDistanceOutbound() []uint32 {
+	var distance []uint32
+
 	distance = append(distance, m.outbound.GetPeersDistance()...)
 
 	return distance
