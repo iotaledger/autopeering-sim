@@ -34,7 +34,8 @@ var (
 	DropAllFlag  = false
 	N_interval   = 1
 	N_max        = 100
-	numSim       = 20
+	numSim       = 10
+	numStartSim  = 1 // 1st sim = 1, this value must  be smaller than numSim
 )
 
 func RunSim(loop int) {
@@ -107,7 +108,7 @@ func RunSim(loop int) {
 	//	log.Println(linkAnalysis)
 
 	convAnalysis := convergenceToString(RecordConv.convergence)
-	err = writeCSV(convAnalysis, "convAnalysis", []string{"X", "Y"})
+	err = writeCSV(convAnalysis, "convAnalysis_"+fileIndex, []string{"X", "Y"})
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
 	}
@@ -168,7 +169,7 @@ func main() {
 		<-s.Start
 	}
 	fmt.Println("start sim")
-	for counter := 0; counter < numSim; counter++ {
+	for counter := numStartSim - 1; counter < numSim; counter++ {
 		fmt.Println("... sim ", counter+1, "/", numSim)
 		RunSim(counter)
 	}
