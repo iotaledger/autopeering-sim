@@ -311,8 +311,9 @@ func (m *manager) updateInbound(requester *peer.Peer, salt *salt.Salt) {
 	candidateList := []peer.PeerDistance{reqDistance}
 
 	filter := NewFilter()
-	filter.AddPeers(m.outbound.GetPeers())      // set filter for outbound neighbors
-	filteredList := filter.Apply(candidateList) // filter out current neighbors
+	filter.AddPeers(m.outbound.GetPeers())           // set filter for outbound neighbors
+	filteredList := filter.Apply(candidateList)      // filter out current neighbors
+	filteredList = filter.ApplyMaxDist(filteredList) // filter out current neighbors
 
 	// make decision
 	toAccept := m.inbound.Select(filteredList)
