@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const graceTime = 100 * time.Millisecond
+const graceTime = 1000 * time.Millisecond
 
 var logger *zap.SugaredLogger
 

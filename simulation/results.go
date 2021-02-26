@@ -89,7 +89,7 @@ func messagesToString(status *StatusMap) (output [][]string) {
 	return output
 }
 
-func convMsgToString(cm []int) (output [][]string, avg float64) {
+func countMsgToString(cm []int) (output [][]string, avg float64) {
 	total := 0
 	for _, msg := range cm {
 		record := []string{
@@ -101,15 +101,28 @@ func convMsgToString(cm []int) (output [][]string, avg float64) {
 	return output, float64(total) / float64(N)
 }
 
-func msgPerTToString() (output [][]string, avg float64) {
+func msgInPerTToString() (output [][]string, avg float64) {
 	total := 0
 	for i := range allPeers {
 		record := []string{}
-		for k := 0; k < len(msgPerTList[uint16(i)]); k++ {
-			record = append(record, fmt.Sprintf("%v", msgPerTList[uint16(i)][k]))
-			total += msgPerTList[uint16(i)][k]
+		for k := 0; k < len(msgInPerTList[uint16(i)]); k++ {
+			record = append(record, fmt.Sprintf("%v", msgInPerTList[uint16(i)][k]))
+			total += msgInPerTList[uint16(i)][k]
 		}
 		output = append(output, record)
 	}
-	return output, float64(total) / float64(N*len(msgPerTList[0]))
+	return output, float64(total) / float64(N*len(msgInPerTList[0]))
+}
+
+func msgOutPerTToString() (output [][]string, avg float64) {
+	total := 0
+	for i := range allPeers {
+		record := []string{}
+		for k := 0; k < len(msgOutPerTList[uint16(i)]); k++ {
+			record = append(record, fmt.Sprintf("%v", msgOutPerTList[uint16(i)][k]))
+			total += msgOutPerTList[uint16(i)][k]
+		}
+		output = append(output, record)
+	}
+	return output, float64(total) / float64(N*len(msgOutPerTList[0]))
 }

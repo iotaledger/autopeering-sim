@@ -4,31 +4,32 @@ import csv
 import pandas as pd
 
 xcol = 0
-xlabel = "Time [seconds]"
+xlabel = 'Time [seconds]'
 xscale = 'linear'
 
 # - - - - parameters unlikely to be changed - - -
 ycol = 1
 zcol = 2  # last column in the csv file
-folder = "data/"
+folder = 'data/'
 
 
 def main():
-    printLinkAnalysis()
+    # printLinkAnalysis()
     printConvergenceAnalysis()
-    printConvMsgAnalysis()
-    printMsgAnalysis()
-    printMsgPerTAnalysis()
+    printCountMsgAnalysis('In')
+    printCountMsgAnalysis('Out')
+    # printMsgAnalysis()
+    # printMsgPerTAnalysis()
 
 
 def printLinkAnalysis():
     fig = plt.figure()
     filename = folder+'plot_linkAnalysis'
-    partPlot2("LinkAnalysis", "linkAnalysis", filename, "blue")
+    partPlot2('LinkAnalysis', 'linkAnalysis', filename, 'blue')
     plt.xscale(xscale)
     # plt.xlim(xlim)
     plt.xlabel(xlabel)
-    plt.ylabel("Probability")
+    plt.ylabel('Probability')
     # plt.yscale('log')
     plt.legend(loc='best')
     plt.savefig(filename+'.eps', format='eps')
@@ -37,16 +38,18 @@ def printLinkAnalysis():
 
 def printConvergenceAnalysis():
     filename = folder+'plot_convAnalysis'
-    partPlot3("ConvAnalysis", "convAnalysis", filename, "blue")
+    partPlot3('ConvAnalysis', 'convAnalysis', filename, 'blue')
 
 
-def printConvMsgAnalysis():
+def printCountMsgAnalysis(type):
     fig = plt.figure()
-    filename = folder+'plot_convMsgAnalysis'
-    histoPlot1("ConvMsgAnalysis", "convMsgAnalysis", filename, "blue", xcol)
+    filename = folder+'plot_convMsg'+type+'Analysis'
+    histoPlot1('CountMsg'+type+'Analysis', 'countMsg' +
+               type+'Analysis', filename, 'blue', xcol)
     plt.xscale(xscale)
-    plt.xlabel("# of messages")
-    plt.ylabel("# of nodes")
+    plt.xlabel('# of messages')
+    plt.ylabel('# of nodes')
+    plt.title(type+'bound')
     plt.savefig(filename+'.eps', format='eps')
     plt.clf()
 
@@ -54,10 +57,10 @@ def printConvMsgAnalysis():
 def printMsgAnalysis():
     fig = plt.figure()
     filename = folder+'plot_MsgAnalysis'
-    histoPlot1("vMsgAnalysis", "MsgAnalysis", filename, "blue", 1)
+    histoPlot1('vMsgAnalysis', 'MsgAnalysis', filename, 'blue', 1)
     plt.xscale(xscale)
-    plt.xlabel("# of messages")
-    plt.ylabel("# of nodes")
+    plt.xlabel('# of messages')
+    plt.ylabel('# of nodes')
     plt.savefig(filename+'.eps', format='eps')
     plt.clf()
 
@@ -65,10 +68,10 @@ def printMsgAnalysis():
 def printMsgPerTAnalysis():
     fig = plt.figure()
     filename = folder+'plot_msgPerTAnalysis'
-    histoPlotMulti("msgPerTAnalysis", "msgPerTAnalysis", filename, "blue")
+    histoPlotMulti('msgPerTAnalysis', 'msgPerTAnalysis', filename, 'blue')
     plt.xscale(xscale)
-    plt.xlabel("# of messages per T (dropAll=true)")
-    plt.ylabel("# of nodes")
+    plt.xlabel('# of messages per T (dropAll=true)')
+    plt.ylabel('# of nodes')
     plt.savefig(filename+'.eps', format='eps')
     plt.clf()
 
@@ -83,7 +86,7 @@ def histoPlotMulti(type, file, filename, color):
     plt.hist(x, bins=range(int(np.amin(x)), int(np.amax(x)), bandwidth))
     axes = plt.gca()
     axes.set_xlim([0, 100])
-    np.savez(filename+"_"+type, x=x)
+    np.savez(filename+'_'+type, x=x)
 
 
 def histoPlot1(type, file, filename, color, valcol):
@@ -92,8 +95,8 @@ def histoPlot1(type, file, filename, color, valcol):
 
     # save the bins
     y = binX(x)
-    pd.DataFrame(y).to_csv("data/plot_convMsgAnalysis_histdata.csv")
-    # writer = csv.writer(open("test", 'w'))
+    pd.DataFrame(y).to_csv('data/plot_convMsgAnalysis_histdata.csv')
+    # writer = csv.writer(open('test', 'w'))
     # for row in x:
     #     writer.writerow(row)
 
@@ -103,7 +106,7 @@ def histoPlot1(type, file, filename, color, valcol):
     plt.hist(x, bins=range(int(np.amin(x))-1, int(maxx), bandwidth))
     axes = plt.gca()
     axes.set_xlim([0, xmax])
-    np.savez(filename+"_"+type, x=x)
+    np.savez(filename+'_'+type, x=x)
 
 
 def partPlot2(type, file, filename, color):
@@ -112,7 +115,7 @@ def partPlot2(type, file, filename, color):
     y = loadDatafromRow(file, ycol)
     x, y = sort2vecs(x, y)
     plt.plot(x, y, color=color, linewidth=1)
-    np.savez(filename+"_"+type, x=x, y=y)
+    np.savez(filename+'_'+type, x=x, y=y)
 
 
 def partPlot3(type, file, filename, color):
@@ -126,12 +129,12 @@ def partPlot3(type, file, filename, color):
     color = 'tab:blue'
     ax1.set_xlabel('Time [seconds]')
     ax1.set_ylabel('Nodes with 8 neighbors [%]', color=color)
-    ax1.set_ylim([70, 100])
+    ax1.set_ylim([50, 100])
     ax1.set_xlim([0, max(x)])
     ax1.plot(x, y, color=color)
-    ax1.spines["top"].set_visible(False)
-    ax1.spines["left"].set_color("grey")
-    ax1.spines["right"].set_color("grey")
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['left'].set_color('grey')
+    ax1.spines['right'].set_color('grey')
     ax1.tick_params(axis='y', labelcolor=color)
     # Show the grid lines as dark grey lines
     plt.grid(b=True, which='major', color='#666666', linestyle='-')
@@ -144,14 +147,14 @@ def partPlot3(type, file, filename, color):
     ax2.plot(x, z, color=color)
     ax2.set_ylim([6, 8])
     ax2.set_xlim([0, max(x)])
-    ax2.spines["top"].set_color("grey")
-    ax2.spines["left"].set_color("grey")
-    ax2.spines["right"].set_color("grey")
+    ax2.spines['top'].set_color('grey')
+    ax2.spines['left'].set_color('grey')
+    ax2.spines['right'].set_color('grey')
     ax2.tick_params(axis='y', labelcolor=color)
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
 
-    np.savez(filename+"_"+type, x=x, y=y)
+    np.savez(filename+'_'+type, x=x, y=y)
     fig.savefig(filename+'.eps', format='eps')
     fig.clf()
 
@@ -174,12 +177,12 @@ def sort3vecs(x, y, z):
 def loadDatafromRow(datatype, row):
     try:
         filestr = folder+'result_'+datatype+'.csv'
-        f = open(filestr, "r")
-        data = np.loadtxt(f, delimiter=",", skiprows=1, usecols=(row))
+        f = open(filestr, 'r')
+        data = np.loadtxt(f, delimiter=',', skiprows=1, usecols=(row))
         return data
     except IOError:
         print(filestr)
-        print("File not found.")
+        print('File not found.')
         return []
 
 

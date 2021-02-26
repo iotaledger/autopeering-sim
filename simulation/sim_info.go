@@ -112,7 +112,7 @@ func (s *StatusMap) Append(from, to uint16, op byte) {
 	s.status[from] = append(s.status[from], st)
 }
 
-func (s *StatusMap) MsgLen(peer uint16) int {
+func (s *StatusMap) MsgOutLen(peer uint16) int {
 	s.Lock()
 	defer s.Unlock()
 	cnt := 0
@@ -120,6 +120,17 @@ func (s *StatusMap) MsgLen(peer uint16) int {
 		switch t.opType {
 		case OUTBOUND:
 			cnt++
+		}
+	}
+	return cnt
+}
+
+func (s *StatusMap) MsgInLen(peer uint16) int {
+	s.Lock()
+	defer s.Unlock()
+	cnt := 0
+	for _, t := range s.status[peer] {
+		switch t.opType {
 		case INCOMING:
 			cnt++
 		}

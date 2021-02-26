@@ -1,5 +1,5 @@
 N=100
-T=200
+T=600
 VisualEnabled=false
-SimDuration=640
+SimDuration=60
 dropAll=false

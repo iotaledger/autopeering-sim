@@ -22,7 +22,8 @@ var (
 	protocolMap    = make(map[peer.ID]*selection.Protocol)
 	idMap          = make(map[peer.ID]uint16)
 	status         = NewStatusMap() // key: timestamp, value: Status
-	convMsg        []int
+	countMsgIn     []int
+	countMsgOut    []int
 	neighborhoods  = make(map[peer.ID][]*peer.Peer)
 	Links          = []Link{}
 	termTickerChan = make(chan bool)
@@ -32,7 +33,8 @@ var (
 	closing        = make(chan struct{})
 	saltTermChan   = make(chan bool)
 	RecordConv     = NewConvergenceList()
-	msgPerTList    = make(map[uint16][]int)
+	msgInPerTList  = make(map[uint16][]int)
+	msgOutPerTList = make(map[uint16][]int)
 	StartTime      time.Time
 	wg             sync.WaitGroup
 
@@ -41,7 +43,7 @@ var (
 	SimDuration  = 30
 	SaltLifetime = 10 * time.Second
 	DropAllFlag  = false
-	cutoffstart  = true
+	cutoffstart  = false
 	cutofftime   = 40 * time.Second
 )
 
@@ -67,7 +69,8 @@ func RunSim() {
 	selection.Events.OutgoingPeering.Attach(events.NewClosure(func(e *selection.PeeringEvent) { outgoingChan <- e }))
 	selection.Events.Dropped.Attach(events.NewClosure(func(e *selection.DroppedEvent) { dropChan <- e }))
 
-	convMsg = make([]int, N)
+	countMsgIn = make([]int, N)
+	countMsgOut = make([]int, N)
 	initialSalt := 0.
 	// lambda := (float64(N) / SaltLifetime.Seconds())
 
@@ -156,7 +159,7 @@ func RunSim() {
 	}
 	log.Println("Closing Done")
 
-	// stop runLinkAnalysis and finalize convMsg data
+	// stop runLinkAnalysis and finalize countMsg data
 	close(closing)
 	// stop runMsgAnalysis and finalize msgPerT data
 	saltTermChan <- true
@@ -199,7 +202,9 @@ func runLinkAnalysis() {
 			case req := <-incomingChan:
 				from := idMap[req.Peer.ID()]
 				to := idMap[req.Self]
-				status.Append(from, to, INCOMING)
+				// status.Append(from, to, INCOMING)
+				// although it says "to" and "from" here, really the status of INCOMING for "to" should be changed
+				status.Append(to, from, INCOMING)
 
 			// handle outgoing peering requests
 			case req := <-outgoingChan:
@@ -234,7 +239,8 @@ func runLinkAnalysis() {
 			case <-closing:
 				for _, p := range allPeers {
 					id := idMap[p.ID()]
-					convMsg[id] = status.MsgLen(id)
+					countMsgIn[id] = status.MsgInLen(id)
+					countMsgOut[id] = status.MsgOutLen(id)
 				}
 				return
 			}
@@ -251,13 +257,15 @@ func runMsgAnalysis() {
 			select {
 			case p := <-selection.ExpiredSaltChan:
 				pID := idMap[p]
-				msgPerTList[pID] = append(msgPerTList[pID], status.MsgLen(pID))
+				msgInPerTList[pID] = append(msgInPerTList[pID], status.MsgInLen(pID))
+				msgOutPerTList[pID] = append(msgOutPerTList[pID], status.MsgOutLen(pID))
 				// use this to keep the value for only the last salt interval
 				// status.ClearStatusMap(pID)
 			case <-saltTermChan:
 				// if some node's salt is not expired
 				for i := range allPeers {
-					msgPerTList[uint16(i)] = append(msgPerTList[uint16(i)], status.MsgLen(uint16(i)))
+					msgInPerTList[uint16(i)] = append(msgInPerTList[uint16(i)], status.MsgInLen(uint16(i)))
+					msgOutPerTList[uint16(i)] = append(msgOutPerTList[uint16(i)], status.MsgOutLen(uint16(i)))
 				}
 				return
 			}
@@ -318,19 +326,35 @@ func writeAnalysisResults() {
 		log.Fatalln("error writing csv:", err)
 	}
 
-	// calculate avg messages to converge
-	convMsgAnalysis, convAvgMsg := convMsgToString(convMsg)
-	err = writeCSV(convMsgAnalysis, "convMsgAnalysis", []string{"MSG"})
+	// calculate number of messages inbound
+	countMsgInAnalysis, countAvgMsgIn := countMsgToString(countMsgIn)
+	err = writeCSV(countMsgInAnalysis, "countMsgInAnalysis", []string{"MSG"})
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
 	}
-	fmt.Println("avg message to converge ", convAvgMsg)
+	fmt.Println("avg message", countAvgMsgIn)
 
-	// calculate avg messages per T
-	msgPerTAnalysis, msgPerTAvg := msgPerTToString()
-	err = writeCSV(msgPerTAnalysis, "msgPerTAnalysis", []string{"MSG"})
+	// calculate number of messages outbound
+	countMsgOutAnalysis, countAvgMsgOut := countMsgToString(countMsgOut)
+	err = writeCSV(countMsgOutAnalysis, "countMsgOutAnalysis", []string{"MSG"})
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
 	}
-	fmt.Println("avg message per T ", msgPerTAvg)
+	fmt.Println("avg message", countAvgMsgOut)
+
+	// calculate avg messages inbound per T
+	msgInPerTAnalysis, msgInPerTAvg := msgInPerTToString()
+	err = writeCSV(msgInPerTAnalysis, "msgInPerTAnalysis", []string{"MSG"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+	fmt.Println("avg message outbound per T ", msgInPerTAvg)
+
+	// calculate avg messages outbound per T
+	msgOutPerTAnalysis, msgOutPerTAvg := msgOutPerTToString()
+	err = writeCSV(msgOutPerTAnalysis, "msgOutPerTAnalysis", []string{"MSG"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+	fmt.Println("avg message outbound per T ", msgOutPerTAvg)
 }
