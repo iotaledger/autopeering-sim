@@ -37,6 +37,7 @@ var (
 	DropAllFlag  = false
 	N_interval   = 1
 	N_max        = 100
+	numSim       = 20
 )
 
 func RunSim(loop int) {
@@ -79,6 +80,7 @@ func RunSim(loop int) {
 	}
 	wgClose.Add(len(allPeers))
 
+	fmt.Println("Sleep for ", time.Duration(SimDuration)*time.Second)
 	time.Sleep(time.Duration(SimDuration) * time.Second)
 	// Stop updating visualizer
 	if vEnabled {
@@ -122,7 +124,7 @@ func RunSim(loop int) {
 		log.Fatalln("error writing csv:", err)
 	}
 
-	distanceAnalysis := distanceToString()
+	distanceAnalysis, distanceAnalysisHisto := distanceToString()
 	err = writeCSV(distanceAnalysis, "distanceAnalysis_"+fileIndex, []string{"X", "Y"})
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
@@ -135,6 +137,36 @@ func RunSim(loop int) {
 	}
 
 	log.Println("Simulation Done")
+	err = writeCSV(distanceAnalysisHisto, "distanceAnalysisHisto_"+fileIndex, []string{"X", "Y"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+	log.Println("Simulation Done")
+
+	distanceInboundAnalysis, distanceInboundAnalysisHisto := distanceInboundToString()
+	err = writeCSV(distanceInboundAnalysis, "distanceInboundAnalysis_"+fileIndex, []string{"X", "Y"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+	log.Println("Simulation Done")
+	err = writeCSV(distanceInboundAnalysisHisto, "distanceInboundAnalysisHisto_"+fileIndex, []string{"X", "Y"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+	log.Println("Simulation Done")
+
+	distanceOutboundAnalysis, distanceOutboundAnalysisHisto := distanceOutboundToString()
+	err = writeCSV(distanceOutboundAnalysis, "distanceOutboundAnalysis_"+fileIndex, []string{"X", "Y"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+	log.Println("Simulation Done")
+	err = writeCSV(distanceOutboundAnalysisHisto, "distanceOutboundAnalysisHisto_"+fileIndex, []string{"X", "Y"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+	log.Println("Simulation Done")
+
 }
 
 func main() {
@@ -148,12 +180,9 @@ func main() {
 		<-s.Start
 	}
 	fmt.Println("start sim")
-	counter := 0
-	fmt.Println(N, N_max, N_interval)
-	for ; N <= N_max; N += N_interval {
-		fmt.Println(N, N_max, N_interval)
+	for counter := 0; counter < numSim; counter++ {
+		fmt.Println("... sim ", counter+1, "/", numSim)
 		RunSim(counter)
-		counter++
 	}
 }
 
