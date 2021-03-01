@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"sort"
+	"strconv"
 	"sync"
 	"time"
-    "strconv"
 
 	"github.com/wollac/autopeering/peer"
 	"github.com/wollac/autopeering/selection"
@@ -14,30 +15,32 @@ import (
 )
 
 var (
-	allPeers       []*peer.Peer
-	mgrMap         = make(map[peer.ID]*selection.Manager)
-	idMap          = make(map[peer.ID]uint16)
-	status         = NewStatusMap() // key: timestamp, value: Status
-	neighborhoods  = make(map[peer.ID][]*peer.Peer)
-	Links          = []Link{}
-	linkChan       = make(chan Event, 100)
-	termTickerChan = make(chan bool)
-	RecordConv     = NewConvergenceList()
-	StartTime      time.Time
-	wg             sync.WaitGroup
-	wgClose        sync.WaitGroup
+	allPeers           []*peer.Peer
+	mgrMap             = make(map[peer.ID]*selection.Manager)
+	idMap              = make(map[peer.ID]uint16)
+	status             = NewStatusMap() // key: timestamp, value: Status
+	neighborhoods      = make(map[peer.ID][]*peer.Peer)
+	Links              = []Link{}
+	DistInfo           = NewDistanceInfo()
+	linkChan           = make(chan Event, 100)
+	termTickerChan     = make(chan bool)
+	termDistTickerChan = make(chan struct{})
+	RecordConv         = NewConvergenceList()
+	StartTime          time.Time
+	wg                 sync.WaitGroup
+	wgClose            sync.WaitGroup
 
 	N            = 100
 	vEnabled     = false
 	SimDuration  = 300
 	SaltLifetime = 300 * time.Second
 	DropAllFlag  = false
-    N_interval   = 1
-    N_max        = 100
+	N_interval   = 1
+	N_max        = 100
 )
 
 func RunSim(loop int) {
-    fileIndex := strconv.Itoa(loop)
+	fileIndex := strconv.Itoa(loop)
 	allPeers = make([]*peer.Peer, N)
 	initialSalt := 0.
 	//lambda := (float64(N) / SaltLifetime.Seconds()) * 10
@@ -64,6 +67,7 @@ func RunSim(loop int) {
 
 	fmt.Println("start link analysis")
 	runLinkAnalysis()
+	runDistanceAnalysis()
 
 	if vEnabled {
 		statVisualizer()
@@ -92,6 +96,7 @@ func RunSim(loop int) {
 	wgClose.Wait()
 	log.Println("Closing Done")
 	linkChan <- Event{TERMINATE, 0, 0, 0}
+	close(termDistTickerChan)
 
 	// Wait until analysis goroutine stops
 	wg.Wait()
@@ -122,6 +127,13 @@ func RunSim(loop int) {
 	if err != nil {
 		log.Fatalln("error writing csv:", err)
 	}
+
+	distanceMedianAnalysis := distanceMedianToString(DistInfo)
+	err = writeCSV(distanceMedianAnalysis, "distanceMedianAnalysis_"+fileIndex, []string{"X", "median"})
+	if err != nil {
+		log.Fatalln("error writing csv:", err)
+	}
+
 	log.Println("Simulation Done")
 }
 
@@ -136,13 +148,13 @@ func main() {
 		<-s.Start
 	}
 	fmt.Println("start sim")
-    counter := 0
-        fmt.Println(N, N_max, N_interval)
-    for ;N<=N_max; N+=N_interval {
-        fmt.Println(N, N_max, N_interval)
-	    RunSim(counter)
-        counter++
-    }
+	counter := 0
+	fmt.Println(N, N_max, N_interval)
+	for ; N <= N_max; N += N_interval {
+		fmt.Println(N, N_max, N_interval)
+		RunSim(counter)
+		counter++
+	}
 }
 
 func runLinkAnalysis() {
@@ -150,7 +162,7 @@ func runLinkAnalysis() {
 	go func() {
 		defer wg.Done()
 
-		ticker := time.NewTicker(10 * time.Millisecond)
+		ticker := time.NewTicker(10 * time.Second)
 		defer ticker.Stop()
 		for {
 			select {
@@ -167,6 +179,45 @@ func runLinkAnalysis() {
 				}
 			case <-ticker.C:
 				updateConvergence(time.Since(StartTime))
+			}
+		}
+	}()
+}
+
+func runDistanceAnalysis() {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			// time's up, get distance median
+			case <-ticker.C:
+				var dist []uint32
+				// get all distances
+				for _, p := range mgrMap {
+					dist = append(dist, p.GetNeighborsDistance()...)
+				}
+
+				// sort the list
+				sort.Slice(dist, func(i, j int) bool { return dist[i] < dist[j] })
+
+				// get median
+				medianIndex := len(dist) / 2
+				var median uint32
+				if len(dist)%2 == 1 {
+					median = dist[medianIndex]
+				} else {
+					median = (dist[medianIndex] + dist[medianIndex+1]) / 2
+				}
+
+				// append median to the global list
+				DistInfo.Append(median)
+
+			case <-termDistTickerChan:
+				return
 			}
 		}
 	}()

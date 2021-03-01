@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
-    "strconv"
+	"strconv"
 )
 
 func createDirIfNotExist(dir string) {
@@ -94,16 +94,16 @@ func distanceToString() (output [][]string) {
 	distList := make(map[float64]int)
 	var totalDist, numDist uint64
 	for _, peer := range allPeers {
-        dist := mgrMap[peer.ID()].GetNeighborsDistance()
+		dist := mgrMap[peer.ID()].GetNeighborsDistance()
 		for _, d := range dist {
-            numDist++
+			numDist++
 			totalDist += uint64(d)
-            index, _ := strconv.ParseFloat(strconv.FormatFloat(float64(d), 'e', 1, 64), 64)
-            distList[index]++
+			index, _ := strconv.ParseFloat(strconv.FormatFloat(float64(d), 'e', 1, 64), 64)
+			distList[index]++
 		}
 	}
-    fmt.Println("avgDistance: ", float64(totalDist) / float64(numDist))
-    // PDF
+	fmt.Println("avgDistance: ", float64(totalDist)/float64(numDist))
+	// PDF
 	for key, num := range distList {
 		record := []string{
 			fmt.Sprintf("%v", key),
@@ -112,21 +112,33 @@ func distanceToString() (output [][]string) {
 		output = append(output, record)
 	}
 	return output
-    /*
-	var totalDist, numDist uint64
-	for _, peer := range allPeers {
-        dist := mgrMap[peer.ID()].GetNeighborsDistance()
-		for _, d := range dist {
-            numDist++
-			totalDist += uint64(d)
-            index, _ := strconv.ParseFloat(strconv.FormatFloat(float64(d), 'e', 1, 64), 64)
-            record := []string{
-                fmt.Sprintf("%v", index),
-            }
-            output = append(output, record)
+	/*
+			var totalDist, numDist uint64
+			for _, peer := range allPeers {
+		        dist := mgrMap[peer.ID()].GetNeighborsDistance()
+				for _, d := range dist {
+		            numDist++
+					totalDist += uint64(d)
+		            index, _ := strconv.ParseFloat(strconv.FormatFloat(float64(d), 'e', 1, 64), 64)
+		            record := []string{
+		                fmt.Sprintf("%v", index),
+		            }
+		            output = append(output, record)
+				}
+			}
+		    fmt.Println("avgDistance: ", float64(totalDist) / float64(numDist))
+			return output
+	*/
+}
+
+func distanceMedianToString(distInfo *DistanceInfo) (output [][]string) {
+	medians := distInfo.GetMedian()
+	for key, num := range medians {
+		record := []string{
+			fmt.Sprintf("%v", key),
+			fmt.Sprintf("%v", num),
 		}
+		output = append(output, record)
 	}
-    fmt.Println("avgDistance: ", float64(totalDist) / float64(numDist))
 	return output
-    */
 }

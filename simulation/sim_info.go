@@ -59,6 +59,29 @@ type StatusMap struct {
 	status map[uint16][]Status
 }
 
+type DistanceInfo struct {
+	sync.Mutex
+	median []uint32
+}
+
+func NewDistanceInfo() *DistanceInfo {
+	return &DistanceInfo{
+		median: []uint32{},
+	}
+}
+
+func (d *DistanceInfo) Append(t uint32) {
+	d.Lock()
+	defer d.Unlock()
+	d.median = append(d.median, t)
+}
+
+func (d *DistanceInfo) GetMedian() []uint32 {
+	d.Lock()
+	defer d.Unlock()
+	return d.median
+}
+
 func NewConvergenceList() *ConvergenceList {
 	return &ConvergenceList{
 		convergence: []Convergence{},
