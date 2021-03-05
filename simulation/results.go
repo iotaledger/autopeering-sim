@@ -129,6 +129,7 @@ func distanceToString() (output, outputHisto [][]string) {
 	}
 	return output, outputHisto
 }
+
 func distanceInboundToString() (output, outputHisto [][]string) {
 	distList := make([]float64, len(allPeers))
 	distListHisto := make(map[float64]int)
@@ -166,6 +167,7 @@ func distanceInboundToString() (output, outputHisto [][]string) {
 	}
 	return output, outputHisto
 }
+
 func distanceOutboundToString() (output, outputHisto [][]string) {
 	distList := make([]float64, len(allPeers))
 	distListHisto := make(map[float64]int)
@@ -202,6 +204,18 @@ func distanceOutboundToString() (output, outputHisto [][]string) {
 		outputHisto = append(outputHisto, record)
 	}
 	return output, outputHisto
+}
+
+func distanceMedianToString(distInfo *DistanceInfo) (output [][]string) {
+	medians := distInfo.GetMedian()
+	for key, num := range medians {
+		record := []string{
+			fmt.Sprintf("%v", key),
+			fmt.Sprintf("%v", num),
+		}
+		output = append(output, record)
+	}
+	return output
 }
 
 /// Distance to strings END //////////////////////////////////////////////////////////////////
