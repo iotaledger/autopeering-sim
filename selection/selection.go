@@ -6,6 +6,10 @@ import (
 	"github.com/wollac/autopeering/peer"
 )
 
+const (
+	relativeMaxOutboundDist = .015 // relative maximum distance allowed for the inbound
+)
+
 type Selector interface {
 	Select(candidates peer.PeerDistance) *peer.Peer
 }
@@ -26,6 +30,18 @@ func (f *Filter) Apply(list []peer.PeerDistance) (filteredList []peer.PeerDistan
 	defer f.lock.RUnlock()
 	for _, peer := range list {
 		if !f.internal[peer.Remote.ID()] {
+			filteredList = append(filteredList, peer)
+		}
+	}
+	return filteredList
+}
+
+func (f *Filter) ApplyMaxPubDist(list []peer.PeerDistance) (filteredList []peer.PeerDistance) {
+	f.lock.RLock()
+	defer f.lock.RUnlock()
+	a := relativeMaxOutboundDist
+	for _, peer := range list {
+		if peer.Distance <= uint32(a*4294967295.) {
 			filteredList = append(filteredList, peer)
 		}
 	}

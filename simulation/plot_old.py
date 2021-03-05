@@ -9,11 +9,11 @@ xscale = 'linear'
 ycol = 1
 zcol = 2  # last column in the csv file
 folder = "data/"
-simID = 0
+filenum = 0
 
 
 def main():
-    # printLinkAnalysis()
+    printLinkAnalysis()
     printConvergenceAnalysis()
     printDistanceAnalysis()
 
@@ -21,30 +21,30 @@ def main():
 def printLinkAnalysis():
     fig = plt.figure()
     filename = folder+'plot_linkAnalysis'
-    partPlot2("LinkAnalysis", "linkAnalysis", filename, "blue")
+    partPlot2("LinkAnalysis", "linkAnalysis_"+str(filenum), filename, "blue")
     plt.xscale(xscale)
     # plt.xlim(xlim)
     plt.xlabel(xlabel)
     plt.ylabel("Probability")
     # plt.yscale('log')
     plt.legend(loc='best')
-    plt.savefig(filename+'_'+str(simID)+'.eps', format='eps')
+    plt.savefig(filename+'.eps', format='eps')
     plt.clf()
 
 
 def printConvergenceAnalysis():
     filename = folder+'plot_convAnalysis'
-    partPlot3("ConvAnalysis", 'convAnalysis_'+str(simID), filename, "blue")
+    partPlot3("ConvAnalysis", "convAnalysis_"+str(filenum), filename, "blue")
 
 
 def printDistanceAnalysis():
     fig = plt.figure()
     filename = folder+'plot_distanceAnalysis'
     partPlot2("DistanceAnalysis", "distanceAnalysis_" +
-              str(simID), filename, "blue")
+              str(filenum), filename, "blue")
     plt.xlabel("Distance")
     plt.ylabel("Probability")
-    plt.savefig(filename+'_'+str(simID)+'.eps', format='eps')
+    plt.savefig(filename+'.eps', format='eps')
     plt.clf()
 
 
@@ -66,7 +66,7 @@ def partPlot2(type, file, filename, color):
     y = loadDatafromRow(file, ycol)
     x, y = sort2vecs(x, y)
     plt.plot(x, y, color=color, linewidth=1)
-    # np.savez(filename+"_"+type, x=x, y=y)
+    np.savez(filename+"_"+type, x=x, y=y)
 
 
 def partPlot3(type, file, filename, color):
@@ -89,16 +89,13 @@ def partPlot3(type, file, filename, color):
     color = 'tab:red'
     # we already handled the x-label with ax1
     ax2.set_ylabel('Avg # of neighbors', color=color)
-    ax2.set_ylim([0, 8])
     ax2.plot(x, z, color=color)
     ax2.tick_params(axis='y', labelcolor=color)
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
 
-    # np.savez(filename+"_"+type, x=x, y=y)
-    fig.savefig(filename+'_'+str(simID)+'.eps', format='eps')
-    plt.savefig(filename+'_'+str(simID)+'.png', format='png')
-
+    np.savez(filename+"_"+type, x=x, y=y)
+    fig.savefig(filename+'.eps', format='eps')
     fig.clf()
 
 

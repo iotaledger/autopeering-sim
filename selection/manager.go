@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	updateOutboundInterval = 100 * time.Millisecond
+	updateOutboundInterval = 200 * time.Millisecond
 
 	inboundRequestQueue = 1000
 	dropQueue           = 1000
@@ -184,26 +184,17 @@ func (m *Manager) updateOutbound(done chan<- struct{}) {
 		done <- struct{}{}
 	}() // always signal, when the function returns
 
-	// sort verified peers by distance
-	distList := peer.SortBySalt(m.net.Local().ID().Bytes(), m.net.Local().GetPublicSalt().GetBytes(), m.peersFunc())
+	candidate := m.getCandidate()
 
-	filter := NewFilter()
-	filter.AddPeers(m.inbound.GetPeers())  // set filter for inbound neighbors
-	filter.AddPeers(m.outbound.GetPeers()) // set filter for outbound neighbors
-
-	filteredList := filter.Apply(distList)               // filter out current neighbors
-	filteredList = m.rejectionFilter.Apply(filteredList) // filter out previous rejection
-
-	// reset filter so that next round filteredList is full again
-	if resetFilteredList {
-		if len(filteredList) < 2 {
-			m.rejectionFilter.Clean()
-		}
-
-	}
-
-	// select new candidate
-	candidate := m.outbound.Select(filteredList)
+	// NOTE the following code stops the protocol from closing. probably the algorithm cannot handle the amount of messages
+	// if candidate is empty and the rejectionfilter is not empty, then reset the filter and rerun the candidate selection again
+	// this will make the network converge faster into a minimum configuration but requires a much larger communication overhead
+	// if candidate.Remote == nil && len(m.rejectionFilter.internal) > 0 {
+	// 	m.rejectionFilter.Clean()
+	// 	candidate = m.getCandidate()
+	// note it can happen that although now the rejectionfilter has been cleared that there is still no candidate,
+	// 	because the node has all top peers in its neighborlist
+	// }
 
 	if candidate.Remote != nil {
 		furthest, _ := m.outbound.getFurthest()
@@ -235,17 +226,43 @@ func (m *Manager) updateOutbound(done chan<- struct{}) {
 	}
 }
 
+func (m *Manager) getCandidate() peer.PeerDistance {
+	// sort verified peers by distance
+	distList := peer.SortBySalt(m.net.Local().ID().Bytes(), m.net.Local().GetPublicSalt().GetBytes(), m.peersFunc())
+
+	filter := NewFilter()
+	filter.AddPeers(m.inbound.GetPeers())  // set filter for inbound neighbors
+	filter.AddPeers(m.outbound.GetPeers()) // set filter for outbound neighbors
+
+	filteredList := filter.Apply(distList)               // filter out current neighbors
+	filteredList = filter.ApplyMaxPubDist(filteredList)  // filter out distances that are too large
+	filteredList = m.rejectionFilter.Apply(filteredList) // filter out previous rejection
+
+	// reset filter so that next round filteredList is full again
+	if resetFilteredList {
+		if len(filteredList) < 2 {
+			m.rejectionFilter.Clean()
+		}
+
+	}
+
+	// select new candidate
+	candidate := m.outbound.Select(filteredList)
+	return candidate
+}
+
 func (m *Manager) updateInbound(requester *peer.Peer, salt *salt.Salt) {
 	// TODO: check request legitimacy
 	//m.log.Debug("Evaluating peering request FROM ", requester.ID())
-	reqDistance := peer.NewPeerDistance(m.net.Local().ID().Bytes(), m.net.Local().GetPrivateSalt().GetBytes(), requester)
+	privDistance := peer.NewPeerDistance(m.net.Local().ID().Bytes(), m.net.Local().GetPrivateSalt().GetBytes(), requester)
+	candidateList := []peer.PeerDistance{privDistance}
 
-	candidateList := []peer.PeerDistance{reqDistance}
+	// can't apply theta-filter here  because we don't have access to some parameters
+	// pubDistance := peer.NewPeerDistance(requester.ID().Bytes(), requester salt, self peer)
 
 	filter := NewFilter()
 	filter.AddPeers(m.outbound.GetPeers())      // set filter for outbound neighbors
 	filteredList := filter.Apply(candidateList) // filter out current neighbors
-
 	// make decision
 	toAccept := m.inbound.Select(filteredList)
 

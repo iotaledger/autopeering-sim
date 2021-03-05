@@ -34,7 +34,7 @@ var (
 	DropAllFlag  = false
 	N_interval   = 1
 	N_max        = 100
-	numSim       = 10
+	numSim       = 30
 	numStartSim  = 1 // 1st sim = 1, this value must  be smaller than numSim
 )
 
@@ -43,6 +43,8 @@ func RunSim(loop int) {
 	allPeers = make([]*peer.Peer, N)
 	initialSalt := 0.
 	//lambda := (float64(N) / SaltLifetime.Seconds()) * 10
+	mgrMap = make(map[peer.ID]*selection.Manager)
+
 	for i := range allPeers {
 		peer := newPeer(fmt.Sprintf("%d", i), (time.Duration(initialSalt) * time.Second))
 		allPeers[i] = peer.peer
@@ -156,6 +158,8 @@ func RunSim(loop int) {
 	}
 	log.Println("Simulation Done")
 
+	resetConvergence()
+
 }
 
 func main() {
@@ -233,4 +237,9 @@ func updateConvergence(time time.Duration) {
 	c := (float64(counter) / float64(N)) * 100
 	avg := float64(avgNeighbors) / float64(N)
 	RecordConv.Append(Convergence{time, c, avg})
+}
+
+func resetConvergence() {
+	RecordConv = NewConvergenceList()
+
 }
