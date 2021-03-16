@@ -26,3 +26,12 @@ func NewZipfMana(identities []*identity.Identity, zipf float64) (m map[*identity
 	}
 	return m
 }
+
+func NewPollenMana(identities []*identity.Identity, cm ConsensusMana) (m map[*identity.Identity]uint64) {
+	m = make(map[*identity.Identity]uint64, len(cm.Consensus))
+
+	for i, manaEntry := range cm.Consensus {
+		m[identities[i]] = uint64(manaEntry.Mana)
+	}
+	return m
+}

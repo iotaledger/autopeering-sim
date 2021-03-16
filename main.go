@@ -105,9 +105,12 @@ func runSim(simCounter int) {
 
 	log.Println("Creating peers ...")
 	netw := transport.NewNetwork()
-	nodeMap = make(map[identity.ID]simulation.Node, config.NumberNodes())
 
-	for i := 0; i < config.NumberNodes(); i++ {
+	numNodes := len(simulation.ParseManaJSON().Consensus)
+
+	nodeMap = make(map[identity.ID]simulation.Node, numNodes)
+
+	for i := 0; i < numNodes; i++ {
 		node := simulation.NewNode(
 			transport.PeerID(i),
 			time.Duration(initialSalt)*time.Second,
@@ -136,7 +139,7 @@ func runSim(simCounter int) {
 	for _, node := range nodeMap {
 		identities = append(identities, node.Peer().Identity)
 	}
-	simulation.IdentityMana = simulation.NewZipfMana(identities, config.Zipf())
+	simulation.IdentityMana = simulation.NewPollenMana(identities, simulation.ParseManaJSON())
 	for _, identity := range identities {
 		if config.Mana() {
 			appendToFile(f, fmt.Sprintf("%s ID - mana: %s - %d\n", time.Now().Format("2006/01/02 15:04:05.000000"), identity.ID(), simulation.IdentityMana[identity]))
