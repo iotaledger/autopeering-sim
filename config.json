@@ -8,7 +8,7 @@
   "InboundNeighborhood": 4,
   "OutboundNeighborhood": 4,
   "mana": true,
-  "R" : 20,
+  "R" : 40,
   "Ro" : 2,
   "zipf": 1
 }

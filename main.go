@@ -106,7 +106,7 @@ func runSim(simCounter int) {
 	log.Println("Creating peers ...")
 	netw := transport.NewNetwork()
 
-	numNodes := len(simulation.ParseManaJSON().Consensus)
+	numNodes := len(simulation.ParseManaJSON().Consensus) + 50
 
 	nodeMap = make(map[identity.ID]simulation.Node, numNodes)
 
